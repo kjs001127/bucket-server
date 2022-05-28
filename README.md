@@ -1,8 +1,6 @@
 # 🪣 Introduction
 
-Bucket is a lightweight and simple in-memory key-value storage.  
-It also offers clustering features like auto-failover and master-slave replication.  
-It is mostly focused on research purpose for building distributed system from scratch.
+Bucket is a lightweight and simple in-memory key-value storage. It also offers clustering features including auto-failover and master-slave replication. Bucket is mostly focused on research purpose for building distributed system from scratch. 
 
 <br/>
   
@@ -12,8 +10,8 @@ It is mostly focused on research purpose for building distributed system from sc
 
 Each node establishes tcp connection with all other nodes in the cluster.  
 More precisely, a node has two connections per each other node in the cluster: inbound and outbound.  
-Client can connect to any node in the cluster to interact with it.  
-When a requested node cannot deal with the message sent by the client, it responses with  a REDIRECT message that indicates a node capable of it.
+
+Client can connect to any node in the cluster to interact with it. When a requested node cannot deal with the message sent by the client, it responses with  a REDIRECT message that indicates a node capable of it.
 (e.g. WRITE request to slave node REDIRECTS to master node)
 
 <br/>
