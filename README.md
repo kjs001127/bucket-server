@@ -4,7 +4,7 @@ Bucket is a lightweight and simple in-memory key-value storage.
 
 It also offers clustering features like auto-failover and master-slave replication.
 
-It is built uppon netty framework.
+It is built upon netty framework.
 
 <br/>
   
