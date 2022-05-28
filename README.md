@@ -34,21 +34,23 @@ Bucket supports master-slave data replication.
 
 A cluster can have a single master node, and multiple slave nodes.
 
-A single master node can accept read/write request and propagtes writes to every other slave nodes in the cluster. Slave nodes are read-only.
+A single master node can accept read/write request and propagtes writes to every other slave nodes in the cluster.
 
-In more detail, to propagate writes in correct order, a node must log incomming writes sequentially to special file called *AOF(Append Only File)*.
+Slave nodes are read-only. In more detail, to propagate writes in correct order, a node must log incomming writes sequentially 
 
- When a slave node requests for a replication, a master node reads and sends AOF up to the offset at the time the request was received.
+to special file called *AOF(Append Only File)*. When a slave node requests for a replication, a master node reads and sends AOF 
 
-It also buffers incomming write after that offset in memory.
+up to the offset at the time the request was received. It also buffers incomming write after that offset in memory.
 
 After *AOF*  transfer completes, it starts sending buffered writes to slave node.
 
 To prevent full-copy of dataset in case of master failure, a node holds two kinds of ids: *current-master-id* and *last-master-id.*
 
-When a new master node starts, it creates a new id and initializes *current-master-id* with it. The old *current-master-id* becomes *last-master-id.*
+When a new master node starts, it creates a new id and initializes *current-master-id* with it. 
 
-When a slave node finds a new master, its *current-master-id* is set to *current-master-id* of its master.  
+The old *current-master-id* becomes *last-master-id.* 
+
+When a slave node finds a new master, its *current-master-id* is set to *current-master-id* of its master.
 
 Again, old *current-master-id* becomes *last-master-id.*
 
