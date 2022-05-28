@@ -3,6 +3,7 @@
 Bucket is a lightweight key-value storage.
 
 It also offers clustering features like auto-failover and master-slave replication.
+
 <br/>
   
 # 🪣 Network topology
@@ -20,6 +21,7 @@ When a requested node cannot deal with the message sent by the client,
 it responses with  a REDIRECT message that indicates a node capable of it.
 
 (e.g. WRITE request to slave node REDIRECTS to master node)
+
 <br/>
 
 # 🪣 Data replication
@@ -53,6 +55,7 @@ Finally, when a master node receives replication request from a slave node,
 it checks if *last-master-id* of the slave node is identical to *current-master-id* or *last-master-id* of its own.
 
 If it is, a partial re-synchronization happens. Otherwise, a full re-synchronization is inevitable.
+
 <br/>
 
 # 🪣 Auto failover
