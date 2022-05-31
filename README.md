@@ -11,8 +11,7 @@ First, you must write config file.
 - host - A local host name which will be propagated to other cluster nodes for connection.
 - port - A storage server port
 - clusterPort - A cluster server port
-- clusterNodes - List of other cluster nodes. [nodeHost]:[nodeClusterPort]. Suppose node A and node B are in same clsuter.  
-                 If node A's host is 123.123.123.123 and clusterPort is 16555, node B should refer node A in clusterNodes as 123.123.123.123:16555  
+- clusterNodes - List of other cluster nodes. [nodeHost]:[nodeClusterPort]. Suppose node A and node B are in same clsuter. If node A's host is 123.123.123.123 and clusterPort is 16555, node B should refer node A in clusterNodes as 123.123.123.123:16555  
                  
 For example,
 
