@@ -2,6 +2,41 @@
 
 Bucket is a lightweight and simple in-memory key-value storage. It also offers clustering features including auto-failover and master-slave replication. Bucket is mostly focused on research purpose for building distributed system from scratch. 
 
+<br/>  
+
+# 🪣 How to launch
+
+First, you must write config file.
+
+- host - A local host name which will be propagated to other cluster nodes for connection.
+- port - A storage server port
+- clusterPort - A cluster server port
+- clusterNodes - List of other cluster nodes. [nodeHost]:[nodeClusterPort]. Suppose node A and node B are in same clsuter.  
+                 If node A's host is 123.123.123.123 and clusterPort is 16555, node B should refer node A in clusterNodes as 123.123.123.123:16555  
+                 
+For example,
+
+```
+host: localhost
+port: 6554
+clusterPort: 16554
+clusterNodes:
+  - localhost:16555
+  - localhost:16556
+dataPath: ./config1
+```
+
+Suppose you have built jar file: bucket.jar. You can now launch bucket-server with following command.
+
+```/java -jar bucket.jar [configPath]```
+
+For example, using example config files in project root directory (config1.yml, config2.yml, config3.yml), the commands would be:
+
+```/java -jar bucket.jar config1.yml```
+```/java -jar bucket.jar config2.yml```
+```/java -jar bucket.jar config3.yml```
+
+
 <br/>
   
 # 🪣 Network topology
