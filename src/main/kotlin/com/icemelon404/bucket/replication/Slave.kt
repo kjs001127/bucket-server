@@ -11,15 +11,15 @@ import kotlin.concurrent.withLock
 
 class Slave(
     private val instanceId: String,
-    private val master: InstanceAddress,
+    private val masterClusterAddr: InstanceAddress,
     private val executorService: ScheduledExecutorService,
-    private val replicationLogHandler: ReplicationLogHandler,
+    private val replicationLogHandler: MasterLog,
     private val replicationDest: OffsetAwareWritable,
     private val storage: KeyValueStorage,
     connect: (InstanceAddress) -> ReplicationSource
 ) : ReplicationStatus {
 
-    private val replicationSource = connect(master)
+    private val replicationSource = connect(masterClusterAddr)
     private lateinit var requestJob: ScheduledFuture<*>
     private lateinit var masterStorageAddr: InstanceAddress
     private val lock = ReentrantLock()
@@ -46,7 +46,7 @@ class Slave(
                     replicationLogHandler.currentMaster
                 )
             )
-            logger().info { "Requesting replication id: $replicationId to $master with id: ${replicationLogHandler.currentMaster}" }
+            logger().info { "Requesting replication id: $replicationId to $masterClusterAddr with id: ${replicationLogHandler.currentMaster}" }
         }
     }
 

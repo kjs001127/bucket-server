@@ -10,7 +10,8 @@ class Follower(
     private val term: Term,
     private val storage: Storage,
     private val transition: Transition,
-    private val executor: ScheduledExecutorService
+    private val executor: ScheduledExecutorService,
+    private val logIndex: AppendLogIndex
 ) : InstanceStatus {
 
 
@@ -33,8 +34,7 @@ class Follower(
             claim.deny(term.value)
             return
         }
-        if (term.value != claim.term)
-            term.value = claim.term
+        term.value = claim.term
         claim.instanceId.let {
             if (leaderAddress != it) {
                 logger().info { "Leader changed to $it" }
@@ -46,13 +46,15 @@ class Follower(
     }
 
     override fun onRequestVote(request: RequestVote) {
-        if (term.value >= request.term)
-            return
-        logger().info { "Voted incoming request" }
-        term.value = request.term
-        refreshElectionTimeout()
-        storage.setFollowerOf(null)
-        request.vote()
+        if (request.term > term.value) {
+            term.value = request.term
+            if (logIndex > request.logIndex)
+                return
+            logger().info { "Voted incoming request" }
+            refreshElectionTimeout()
+            storage.setFollowerOf(null)
+            request.vote()
+        }
     }
 
     private fun refreshElectionTimeout() {

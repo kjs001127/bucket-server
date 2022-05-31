@@ -3,8 +3,8 @@ package com.icemelon404.bucket.network.cluster.connection
 import com.icemelon404.bucket.cluster.replication.ClusterAwareReplicationSource
 import com.icemelon404.bucket.cluster.replication.ClusterFollowerInfo
 import com.icemelon404.bucket.cluster.election.Instance
+import com.icemelon404.bucket.cluster.election.AppendLogIndex
 import com.icemelon404.bucket.common.InstanceAddress
-import com.icemelon404.bucket.common.logger
 import com.icemelon404.bucket.network.cluster.election.HeartBeat
 import com.icemelon404.bucket.network.cluster.election.VoteRequest
 import com.icemelon404.bucket.network.cluster.replication.ReplicationRequest
@@ -12,7 +12,6 @@ import com.icemelon404.bucket.network.common.MessageHandler
 import com.icemelon404.bucket.network.common.ByteToPacketCodec
 import com.icemelon404.bucket.network.common.MessageCodec
 import com.icemelon404.bucket.network.common.PacketToMessageCodec
-import com.icemelon404.bucket.replication.listener.IdAndOffset
 import io.netty.bootstrap.Bootstrap
 import io.netty.channel.*
 import io.netty.channel.nio.NioEventLoopGroup
@@ -65,8 +64,8 @@ class ClusterNode(
         channel.writeAndFlush(HeartBeat(term, serverAddress)).syncUninterruptibly()
     }
 
-    override fun requestVote(term: Long) {
-        channel.writeAndFlush(VoteRequest(term))
+    override fun requestVote(term: Long, index: AppendLogIndex) {
+        channel.writeAndFlush(VoteRequest(term, index.id, index.offset))
     }
 
     override fun requestReplication(request: ClusterFollowerInfo) {

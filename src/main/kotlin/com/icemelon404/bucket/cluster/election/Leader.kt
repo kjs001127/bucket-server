@@ -13,7 +13,8 @@ class Leader(
     private val instances: Set<Instance>,
     private val transition: Transition,
     private val executor: ScheduledExecutorService,
-    private val storage: Storage
+    private val storage: Storage,
+    private val logIndex: AppendLogIndex
 ) : InstanceStatus {
 
     private val health = ConcurrentHashMap<InstanceAddress, Health>()
@@ -30,7 +31,7 @@ class Leader(
 
     override fun onStart() {
         logger().info { "Transition to leader state" }
-        storage.setLeader()
+        storage.setLeader(term.value)
         instances.forEach { health[it.address] = Health.PENDING }
         runHeartBeat(term.value)
     }
@@ -92,8 +93,13 @@ class Leader(
     }
 
     override fun onRequestVote(voteRequest: RequestVote) {
-        if (voteRequest.term > term.value && toFollower(voteRequest.term))
-            voteRequest.vote()
+        if (voteRequest.term > term.value) {
+            term.value = voteRequest.term
+            if (logIndex > voteRequest.logIndex)
+                return
+            if (toFollower(voteRequest.term))
+                voteRequest.vote()
+        }
     }
 
     override fun onHeartBeatDeny(responseTerm: Long) {

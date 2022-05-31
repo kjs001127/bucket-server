@@ -9,6 +9,7 @@ import kotlin.concurrent.withLock
 
 class Candidate(
     private val term: Term,
+    private val logIndex: AppendLogIndex,
     private val instances: Set<Instance>,
     private val transition: Transition,
     private val storage: Storage,
@@ -36,15 +37,15 @@ class Candidate(
                 term.value++
                 receivedVoteCnt = 1
                 instances.forEach {
-                    try {
-                        it.requestVote(term.value)
+                    try { it.requestVote(term.value, logIndex)
                     } catch (e: Exception) {
+
                         logger().warn { "Vote request failed to ${it.address}" }
                     }
                 }
             }
 
-        }, 0, 5000 + ThreadLocalRandom.current().nextLong(500), TimeUnit.MILLISECONDS)
+        }, 0, 500 + ThreadLocalRandom.current().nextLong(500), TimeUnit.MILLISECONDS)
         latch.countDown()
     }
 
@@ -65,11 +66,15 @@ class Candidate(
 
     override fun onRequestVote(voteRequest: RequestVote) {
         lock.withLock {
-            if (term.value >= voteRequest.term)
-                return
-            toFollower(voteRequest.term)
-            voteRequest.vote()
-            logger().info { "Voted incoming request" }
+            if (term.value < voteRequest.term) {
+                term.value = voteRequest.term
+                if (voteRequest.logIndex < logIndex)
+                    return
+                voteRequest.vote()
+                requestVoteJob.cancel(true)
+                transition.toFollower()
+                logger().info { "Voted incoming request" }
+            }
         }
     }
 
@@ -81,13 +86,9 @@ class Candidate(
                 return
             }
             logger().info { "Leader with term: ${claim.term} detected" }
-            toFollower(claim.term)
+            term.value = claim.term
+            requestVoteJob.cancel(true)
+            transition.toFollower()
         }
-    }
-
-    private fun toFollower(newTerm: Long) {
-        requestVoteJob.cancel(true)
-        term.value = newTerm
-        transition.toFollower()
     }
 }

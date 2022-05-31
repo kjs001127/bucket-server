@@ -16,7 +16,7 @@ class ReplicationAcceptCodec(packetId: Int) : MessageCodec<ReplicationAccept>(Re
         with(ByteBuffer.wrap(packet.body)) {
             val term = long
             val replicationId = long
-            val masterId = string
+            val masterId = long
             val masterOffset = long
             val masterIp = string
             val masterPort = int
@@ -30,10 +30,10 @@ class ReplicationAcceptCodec(packetId: Int) : MessageCodec<ReplicationAccept>(Re
     }
 
     override fun serialize(msg: ReplicationAccept): ByteArray {
-        return ByteBuffer.allocate(bufferSize(msg.masterInfo.id) + bufferSize(msg.masterAddress.dest) + 28).apply {
+        return ByteBuffer.allocate(bufferSize(msg.masterAddress.dest) + 36).apply {
             putLong(msg.term)
             putLong(msg.replicationId)
-            putString(msg.masterInfo.id)
+            putLong(msg.masterInfo.id)
             putLong(msg.masterInfo.offset)
             putString(msg.masterAddress.dest)
             putInt(msg.masterAddress.port)

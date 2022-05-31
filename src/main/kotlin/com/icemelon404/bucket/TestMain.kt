@@ -25,12 +25,12 @@ import com.icemelon404.bucket.network.cluster.replication.codec.ReplicationReque
 import com.icemelon404.bucket.network.cluster.replication.handler.*
 import com.icemelon404.bucket.network.storage.codec.*
 import com.icemelon404.bucket.replication.Master
-import com.icemelon404.bucket.replication.ReplicationLogHandler
 import com.icemelon404.bucket.replication.Slave
 import com.icemelon404.bucket.storage.codec.SimpleKeyValueCodec
 import com.icemelon404.bucket.replication.storage.AppendOnlyFile
 import com.icemelon404.bucket.replication.storage.ReplicableStorage
-import com.icemelon404.bucket.replication.storage.ReplicationLogImpl
+import com.icemelon404.bucket.log.FileLogRepository
+import com.icemelon404.bucket.log.LogHandler
 import java.io.File
 import java.nio.file.Paths
 import java.util.concurrent.Executors
@@ -45,7 +45,7 @@ fun main(arr: Array<String>) {
     val host = config.host
     val port = config.port
 
-    val term = Term(0)
+
     val scheduler = Executors.newScheduledThreadPool(20)
     val clusterIp = InstanceAddress(host, config.clusterPort)
     val storageIp = InstanceAddress(host, port)
@@ -55,15 +55,16 @@ fun main(arr: Array<String>) {
     val storage = ReplicableStorage {
         AppendOnlyFile(config.dataPath + File.separator + "aof", keyValueCodec)
     }
+    val logHandler = LogHandler(storage, FileLogRepository(config.dataPath))
+    val term = Term(logHandler.id)
     val realConnector = ClusterNodeMatchingConnector(mutableSetOf())
     val connector = ReplicationSourceConnectorAdapter(realConnector, term)
-    val logHandler = ReplicationLogHandler(storage, ReplicationLogImpl(config.dataPath))
     val followerBuilder = { masterAddress: InstanceAddress ->
         Slave(clusterIp.toString(), masterAddress, scheduler, logHandler, storage, storage, connector::connect)
     }
-    val leaderBuilder = { Master(scheduler, storage, logHandler, storage) }
+    val leaderBuilder = { logId: Long -> Master(scheduler, storage, logHandler, storage, logId) }
     val replication = ReplicationStatusMachine(term, followerBuilder, leaderBuilder)
-    val cluster = ClusterStateMachine(replication, scheduler, term)
+    val cluster = ClusterStateMachine(replication, scheduler, term, logHandler)
 
     val codecs = listOf(
         DenyHeartBeatCodec(1),

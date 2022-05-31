@@ -17,18 +17,18 @@ class ReplicationRequestCodec(packetId: Int) : MessageCodec<ReplicationRequest>(
             val term = long
             val replicationId = long
             val instanceId = string
-            val lastMasterId = string
+            val lastMasterId = long
             val lastMasterOffset = long
             return ReplicationRequest(term, instanceId, replicationId, IdAndOffset(lastMasterId, lastMasterOffset))
         }
     }
 
     override fun serialize(msg: ReplicationRequest): ByteArray {
-        return ByteBuffer.allocate(bufferSize(msg.lastMaster.id)+ bufferSize(msg.instanceId) + 24).apply {
+        return ByteBuffer.allocate(bufferSize(msg.instanceId) + 32).apply {
             putLong(msg.term)
             putLong(msg.replicationId)
             putString(msg.instanceId)
-            putString(msg.lastMaster.id)
+            putLong(msg.lastMaster.id)
             putLong(msg.lastMaster.offset)
         }.array()
     }

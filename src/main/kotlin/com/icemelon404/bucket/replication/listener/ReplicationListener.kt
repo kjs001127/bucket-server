@@ -25,7 +25,7 @@ open class DataReplication(
     val replicationId: Long
 )
 
-data class IdAndOffset(val id: String, val offset: Long)
+data class IdAndOffset(val id: Long, val offset: Long)
 
 
 

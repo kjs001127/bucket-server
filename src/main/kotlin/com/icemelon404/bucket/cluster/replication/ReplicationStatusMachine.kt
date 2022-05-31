@@ -12,7 +12,7 @@ import kotlin.concurrent.withLock
 class ReplicationStatusMachine(
     private val term: Term,
     private val makeFollower: (address: InstanceAddress) -> ReplicationStatus,
-    private val makeLeader: () -> ReplicationStatus
+    private val makeLeader: (Long) -> ReplicationStatus
 ) : Storage, ReplicationListener {
 
     private val lock = ReentrantLock()
@@ -26,8 +26,8 @@ class ReplicationStatusMachine(
         }
     }
 
-    override fun setLeader() = lock.withLock {
-        newStatus(makeLeader())
+    override fun setLeader(id: Long) = lock.withLock {
+        newStatus(makeLeader(id))
     }
 
     override fun setFollowerOf(masterAddress: InstanceAddress?) = lock.withLock {

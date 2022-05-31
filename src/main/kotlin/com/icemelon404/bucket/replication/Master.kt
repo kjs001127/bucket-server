@@ -1,6 +1,5 @@
 package com.icemelon404.bucket.replication
 
-import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.common.logger
 import com.icemelon404.bucket.replication.listener.IdAndOffset
 import com.icemelon404.bucket.replication.listener.ReplicationRequest
@@ -14,15 +13,16 @@ import kotlin.math.min
 class Master(
     private val scheduler: ExecutorService,
     private val replicatorFactory: ReplicatorFactory,
-    private val replicationLogHandler: ReplicationLogHandler,
-    private val storage: KeyValueStorage
+    private val masterLog: MasterLog,
+    private val storage: KeyValueStorage,
+    private val masterId: Long
 ) : ReplicationStatus {
 
     private val replication = mutableMapOf<String, Replication>()
 
     override fun onStart() {
-        replicationLogHandler.newMasterId()
-        logger().info { "Master state with id: ${replicationLogHandler.currentMaster}" }
+        masterLog.newMasterId(masterId)
+        logger().info { "Master state with id: ${masterLog.currentMaster}, last-id: ${masterLog.lastMaster}" }
     }
 
     override fun onReplicationRequest(request: ReplicationRequest) {
@@ -39,15 +39,16 @@ class Master(
     private fun newReplicationTask(request: ReplicationRequest) =
         scheduler.submit {
             val startOffset = replicationStartOffset(request.lastMaster)
-            request.accept(IdAndOffset(replicationLogHandler.currentMaster.id, startOffset))
+            request.accept(IdAndOffset(masterLog.currentMaster.id, startOffset))
             sendReplicationData(request, startOffset, 500, 500)
         }
 
-    private fun replicationStartOffset(replicaIdOffset: IdAndOffset) =
-        setOf(replicationLogHandler.currentMaster, replicationLogHandler.lastMaster)
+    private fun replicationStartOffset(replicaIdOffset: IdAndOffset): Long {
+        return setOf(masterLog.currentMaster, masterLog.lastMaster)
             .find { it?.id == replicaIdOffset.id }
             ?.let { min(it.offset, replicaIdOffset.offset) }
             ?: 0
+    }
 
     private fun sendReplicationData(
         request: ReplicationRequest,
