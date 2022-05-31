@@ -32,8 +32,8 @@ Suppose you have built jar file: bucket.jar. You can now launch bucket-server wi
 
 For example, using example config files in project root directory (config1.yml, config2.yml, config3.yml), the commands would be:
 
-```/java -jar bucket.jar config1.yml```
-```/java -jar bucket.jar config2.yml```
+```/java -jar bucket.jar config1.yml```  
+```/java -jar bucket.jar config2.yml```  
 ```/java -jar bucket.jar config3.yml```
 
 
