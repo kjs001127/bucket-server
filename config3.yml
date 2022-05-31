@@ -1,0 +1,6 @@
+host: localhost
+port: 6556
+clusterNodes:
+  - localhost:16554
+  - localhost:16555
+dataPath: ./config3
