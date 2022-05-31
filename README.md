@@ -6,7 +6,7 @@ Bucket is a lightweight and simple in-memory key-value storage. It also offers c
 
 # 🪣 How to launch
 
-First, you must write config file.
+First, you must write a config file.
 
 - host - A local host name which will be propagated to other cluster nodes for connection.
 - port - A storage server port
