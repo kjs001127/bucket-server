@@ -9,6 +9,9 @@ class ReplicationSourceAdapter(
     private val delegate: ClusterAwareReplicationSource
 ) : ReplicationSource {
 
+    override val address: InstanceAddress
+        get() = delegate.address
+
     override fun requestReplication(info: FollowerInfo)
      = delegate.requestReplication(ClusterFollowerInfo(term, info))
 

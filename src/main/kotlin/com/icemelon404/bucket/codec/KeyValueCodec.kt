@@ -1,4 +1,4 @@
-package com.icemelon404.bucket.storage.codec
+package com.icemelon404.bucket.codec
 
 import com.icemelon404.bucket.storage.KeyValue
 import java.nio.ByteBuffer

@@ -1,18 +1,18 @@
 package com.icemelon404.bucket.network.cluster.replication.codec
 
 import com.icemelon404.bucket.common.InstanceAddress
-import com.icemelon404.bucket.network.cluster.replication.ReplicationAccept
+import com.icemelon404.bucket.network.cluster.replication.ReplicationAcceptRequest
 import com.icemelon404.bucket.network.common.MessageCodec
 import com.icemelon404.bucket.network.common.Packet
-import com.icemelon404.bucket.network.util.bufferSize
-import com.icemelon404.bucket.network.util.putString
-import com.icemelon404.bucket.network.util.string
+import com.icemelon404.bucket.common.bufferSizeOf
+import com.icemelon404.bucket.common.putString
+import com.icemelon404.bucket.common.string
 import com.icemelon404.bucket.replication.listener.IdAndOffset
 import java.nio.ByteBuffer
 
-class ReplicationAcceptCodec(packetId: Int) : MessageCodec<ReplicationAccept>(ReplicationAccept::class, packetId) {
+class ReplicationAcceptCodec(packetId: Int) : MessageCodec<ReplicationAcceptRequest>(ReplicationAcceptRequest::class, packetId) {
 
-    override fun resolve(packet: Packet): ReplicationAccept {
+    override fun resolve(packet: Packet): ReplicationAcceptRequest {
         with(ByteBuffer.wrap(packet.body)) {
             val term = long
             val replicationId = long
@@ -20,7 +20,7 @@ class ReplicationAcceptCodec(packetId: Int) : MessageCodec<ReplicationAccept>(Re
             val masterOffset = long
             val masterIp = string
             val masterPort = int
-            return ReplicationAccept(
+            return ReplicationAcceptRequest(
                 term,
                 replicationId,
                 InstanceAddress(masterIp, masterPort),
@@ -29,8 +29,8 @@ class ReplicationAcceptCodec(packetId: Int) : MessageCodec<ReplicationAccept>(Re
         }
     }
 
-    override fun serialize(msg: ReplicationAccept): ByteArray {
-        return ByteBuffer.allocate(bufferSize(msg.masterAddress.dest) + 36).apply {
+    override fun serialize(msg: ReplicationAcceptRequest): ByteArray {
+        return ByteBuffer.allocate(bufferSizeOf(msg.masterAddress.dest) + 36).apply {
             putLong(msg.term)
             putLong(msg.replicationId)
             putLong(msg.masterInfo.id)

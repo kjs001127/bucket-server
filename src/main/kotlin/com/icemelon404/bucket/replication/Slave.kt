@@ -11,24 +11,19 @@ import kotlin.concurrent.withLock
 
 class Slave(
     private val instanceId: String,
-    private val masterClusterAddr: InstanceAddress,
     private val executorService: ScheduledExecutorService,
-    private val replicationLogHandler: MasterLog,
-    private val replicationDest: OffsetAwareWritable,
-    private val storage: KeyValueStorage,
-    connect: (InstanceAddress) -> ReplicationSource
-) : ReplicationStatus {
+    private val aof: VersionOffsetWriter,
+    private val replicationSrc: ReplicationSource
+) : ReplicationLifecycle {
 
-    private val replicationSource = connect(masterClusterAddr)
     private lateinit var requestJob: ScheduledFuture<*>
-    private lateinit var masterStorageAddr: InstanceAddress
     private val lock = ReentrantLock()
     private var replicationId: Long = 0
 
     @Volatile
     private var timeout = System.currentTimeMillis()
 
-    override fun onStart() {
+    override fun start() {
         logger().info { "Slave state" }
         requestJob = executorService.scheduleWithFixedDelay({
             if (timeout < System.currentTimeMillis())
@@ -39,18 +34,20 @@ class Slave(
     private fun requestReplication() {
         lock.withLock {
             replicationId++
-            replicationSource.requestReplication(
+            replicationSrc.requestReplication(
                 FollowerInfo(
                     instanceId,
                     replicationId,
-                    replicationLogHandler.currentMaster
+                    currentIdAndOffset(),
                 )
             )
-            logger().info { "Requesting replication id: $replicationId to $masterClusterAddr with id: ${replicationLogHandler.currentMaster}" }
+            logger().info { "Requesting replication id: $replicationId with id: ${currentIdAndOffset().id}}" }
         }
     }
 
-    private fun refreshSchedule() {
+    private fun currentIdAndOffset(): IdAndOffset = this.aof.versionAndOffset
+
+    private fun refreshRequestTimeout() {
         timeout = System.currentTimeMillis() + 3000
     }
 
@@ -62,9 +59,9 @@ class Slave(
 
     private fun writeData(content: List<KeyValue>) {
         lock.withLock {
-            refreshSchedule()
+            refreshRequestTimeout()
             if (content.isNotEmpty())
-                replicationDest.write(content)
+                aof.write(content)
         }
     }
 
@@ -72,40 +69,24 @@ class Slave(
         requestJob.cancel(true)
     }
 
-    override fun onReplicationAccept(accept: ReplicationAccept) {
+    override fun onAccept(accept: ReplicationAccept) {
         lock.withLock {
             if (accept.replicationId != replicationId)
                 return
-            refreshSchedule()
-            masterStorageAddr = accept.masterAddress
-            replicationDest.offset = accept.dataInfo.offset
-            replicationLogHandler.newMasterId(accept.dataInfo.id)
-            logger().info { "Replication accepted with id:  ${replicationLogHandler.currentMaster}" }
+            refreshRequestTimeout()
+            aof.versionAndOffset = accept.dataInfo
+            logger().info { "Replication accepted with id:  ${currentIdAndOffset().id}" }
         }
-    }
-
-    override fun write(keyValue: KeyValue) {
-        throw RedirectException(masterStorageAddr)
-    }
-
-    override fun read(key: String): ByteArray? {
-        return storage.read(key)
     }
 }
 
 interface ReplicationSource {
+    val address: InstanceAddress
     fun requestReplication(info: FollowerInfo)
 }
-
-class RedirectException(val dest: InstanceAddress) : RuntimeException()
 
 data class FollowerInfo(val instanceId: String, val replicationId: Long, val lastMaster: IdAndOffset)
 
 interface ReplicationSourceConnector {
     fun connect(address: InstanceAddress): ReplicationSource
-}
-
-interface OffsetAwareWritable {
-    var offset: Long
-    fun write(keyValues: List<KeyValue>)
 }

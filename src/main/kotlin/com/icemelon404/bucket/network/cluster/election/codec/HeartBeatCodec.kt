@@ -4,9 +4,9 @@ import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.network.cluster.election.HeartBeat
 import com.icemelon404.bucket.network.common.MessageCodec
 import com.icemelon404.bucket.network.common.Packet
-import com.icemelon404.bucket.network.util.bufferSize
-import com.icemelon404.bucket.network.util.putString
-import com.icemelon404.bucket.network.util.string
+import com.icemelon404.bucket.common.bufferSizeOf
+import com.icemelon404.bucket.common.putString
+import com.icemelon404.bucket.common.string
 import java.nio.ByteBuffer
 
 class HeartBeatCodec(packetId: Int) : MessageCodec<HeartBeat>(HeartBeat::class, packetId) {
@@ -22,7 +22,7 @@ class HeartBeatCodec(packetId: Int) : MessageCodec<HeartBeat>(HeartBeat::class, 
     }
 
     override fun serialize(msg: HeartBeat): ByteArray {
-        return ByteBuffer.allocate(bufferSize(msg.address.dest) + 12).apply {
+        return ByteBuffer.allocate(bufferSizeOf(msg.address.dest) + 12).apply {
             putLong(msg.term)
             putString(msg.address.dest)
             putInt(msg.address.port)

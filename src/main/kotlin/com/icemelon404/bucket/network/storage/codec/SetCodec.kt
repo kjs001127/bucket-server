@@ -3,11 +3,7 @@ package com.icemelon404.bucket.network.storage.codec
 import com.icemelon404.bucket.network.common.MessageCodec
 import com.icemelon404.bucket.network.common.Packet
 import com.icemelon404.bucket.network.storage.message.Set
-import com.icemelon404.bucket.network.util.bufferSize
-import com.icemelon404.bucket.network.util.putString
-import com.icemelon404.bucket.network.util.string
-import com.icemelon404.bucket.storage.KeyValue
-import com.icemelon404.bucket.storage.codec.KeyValueCodec
+import com.icemelon404.bucket.codec.KeyValueCodec
 import java.nio.ByteBuffer
 
 class SetCodec(

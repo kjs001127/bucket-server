@@ -8,12 +8,11 @@ import java.util.concurrent.*
 
 class Follower(
     private val term: Term,
-    private val storage: Storage,
-    private val transition: Transition,
+    private val voteListener: VoteListener,
+    private val transition: ClusterStateMachine,
     private val executor: ScheduledExecutorService,
-    private val logIndex: AppendLogIndex
+    private val logIndex: LogIndex
 ) : InstanceStatus {
-
 
     @Volatile
     private var electionTimeout = System.currentTimeMillis()
@@ -23,7 +22,7 @@ class Follower(
 
     override fun onStart() {
         logger().info { "Transition to follower state" }
-        storage.disable()
+        voteListener.onVotePending()
         refreshElectionTimeout()
         checkElectionTimeout()
     }
@@ -39,7 +38,7 @@ class Follower(
             if (leaderAddress != it) {
                 logger().info { "Leader changed to $it" }
                 leaderAddress = it
-                storage.setFollowerOf(it)
+                voteListener.onLeaderFound(term.value, it)
             }
         }
         refreshElectionTimeout()
@@ -52,7 +51,7 @@ class Follower(
                 return
             logger().info { "Voted incoming request" }
             refreshElectionTimeout()
-            storage.setFollowerOf(null)
+            voteListener.onVotePending()
             request.vote()
         }
     }

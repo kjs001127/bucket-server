@@ -10,11 +10,11 @@ import kotlin.concurrent.withLock
 
 class Leader(
     private val term: Term,
-    private val instances: Set<Instance>,
-    private val transition: Transition,
+    private val cluster: Set<Instance>,
+    private val transition: ClusterStateMachine,
     private val executor: ScheduledExecutorService,
-    private val storage: Storage,
-    private val logIndex: AppendLogIndex
+    private val voteListener: VoteListener,
+    private val logIndex: LogIndex
 ) : InstanceStatus {
 
     private val health = ConcurrentHashMap<InstanceAddress, Health>()
@@ -27,18 +27,18 @@ class Leader(
 
     private val lock = ReentrantLock()
     private val majority: Int
-        get() = ((instances.size + 1) / 2) + 1
+        get() = ((cluster.size + 1) / 2) + 1
 
     override fun onStart() {
         logger().info { "Transition to leader state" }
-        storage.setLeader(term.value)
-        instances.forEach { health[it.address] = Health.PENDING }
+        voteListener.onElectedAsLeader(term.value)
+        cluster.forEach { health[it.address] = Health.PENDING }
         runHeartBeat(term.value)
     }
 
     private fun runHeartBeat(term: Long) {
         val heartBeatLatch = CountDownLatch(1)
-        heartBeatJob = instances.map {
+        heartBeatJob = cluster.map {
             executor.scheduleWithFixedDelay({
                 heartBeatLatch.await()
                 try {

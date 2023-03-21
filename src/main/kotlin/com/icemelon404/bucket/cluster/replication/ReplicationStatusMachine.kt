@@ -1,46 +1,46 @@
 package com.icemelon404.bucket.cluster.replication
 
-import com.icemelon404.bucket.cluster.election.Storage
+import com.icemelon404.bucket.cluster.election.VoteListener
 import com.icemelon404.bucket.cluster.election.Term
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.replication.listener.*
-import com.icemelon404.bucket.replication.ReplicationStatus
+import com.icemelon404.bucket.replication.ReplicationLifecycle
 import com.icemelon404.bucket.storage.KeyValue
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class ReplicationStatusMachine(
     private val term: Term,
-    private val makeFollower: (address: InstanceAddress) -> ReplicationStatus,
-    private val makeLeader: (Long) -> ReplicationStatus
-) : Storage, ReplicationListener {
+    private val makeFollower: (masterAddr: InstanceAddress) -> ReplicationLifecycle,
+    private val makeLeader: () -> ReplicationLifecycle
+) : VoteListener, ClusterAwareReplicationListener {
 
     private val lock = ReentrantLock()
-    private lateinit var status: ReplicationStatus
+    private lateinit var status: ReplicationLifecycle
 
-    override fun disable() {
+    override fun onVotePending() {
         lock.withLock {
             closeCurrentStatus()
             status = EmptyStatus()
-            status.onStart()
+            status.start()
         }
     }
 
-    override fun setLeader(id: Long) = lock.withLock {
-        newStatus(makeLeader(id))
+    override fun onElectedAsLeader(term: Long) = lock.withLock {
+        newStatus(makeLeader())
     }
 
-    override fun setFollowerOf(masterAddress: InstanceAddress?) = lock.withLock {
+    override fun onLeaderFound(term: Long, masterAddress: InstanceAddress) = lock.withLock {
         if (masterAddress == null)
             newStatus(EmptyStatus())
         else
             newStatus(makeFollower(masterAddress))
     }
 
-    private fun newStatus(new: ReplicationStatus) {
+    private fun newStatus(new: ReplicationLifecycle) {
         closeCurrentStatus()
         status = new
-        status.onStart()
+        status.start()
     }
 
     private fun closeCurrentStatus() {
@@ -48,58 +48,78 @@ class ReplicationStatusMachine(
             this.status.close()
     }
 
-    override fun onData(replication: DataReplication) {
-        replication as ClusterDataReplication
+    override fun onData(replication: ClusterDataReplication) {
         lock.withLock {
             if (this.term.value != replication.term)
                 return
-            status.onData(replication)
+            status.onData(replication.data)
         }
     }
 
-    override fun onReplicationRequest(request: ReplicationRequest) {
-        request as ClusterReplicationRequest
+    override fun onRequest(context: ClusterReplicationContext, acceptor: ClusterReplicationAcceptor) {
         lock.withLock {
-            request.currentTerm = term.value
-            if (this.term.value != request.term)
+            if (this.term.value != context.term)
                 return
-            status.onReplicationRequest(request)
+            status.onRequest(context.context, ReplicationAcceptorAdapter(this.term.value, acceptor))
         }
     }
 
-    override fun onReplicationAccept(accept: ReplicationAccept) {
-        accept as ClusterReplicationAccept
+    override fun onAccept(accept: ClusterReplicationAccept) {
         lock.withLock {
             if (this.term.value != accept.term)
                 return
-            status.onReplicationAccept(accept)
+            status.onAccept(accept.data)
         }
     }
+}
 
-    override fun write(keyValue: KeyValue) = status.write(keyValue)
-
-    override fun read(key: String): ByteArray? = status.read(key)
+interface ClusterAwareReplicationListener {
+    fun onAccept(accept: ClusterReplicationAccept)
+    fun onRequest(context:ClusterReplicationContext, acceptor: ClusterReplicationAcceptor)
+    fun onData(data: ClusterDataReplication)
 }
 
 class ClusterReplicationAccept(
     val term: Long,
-    masterAddr: InstanceAddress,
-    replicationId: Long,
-    masterInfo: IdAndOffset
-): ReplicationAccept(replicationId, masterAddr, masterInfo)
+    val data: ReplicationAccept
+)
 
 class ClusterDataReplication(
     val term: Long,
-    content: List<KeyValue>,
-    replicationId: Long
-) : DataReplication(content, replicationId)
+    val data: DataReplication
+)
 
-interface ClusterReplicationRequest : ReplicationRequest {
+class ClusterReplicationContext(
+    val context: ReplicationContext,
     val term: Long
-    var currentTerm: Long
+)
+
+interface ClusterReplicationAcceptor {
+    fun accept(currentTerm: Long, masterInfo: IdAndOffset) : ClusterReplicationDataSender
 }
 
-class EmptyStatus : ReplicationStatus {
-    override fun write(keyValue: KeyValue) = error("empty status")
-    override fun read(key: String) = error("empty status")
+interface ClusterReplicationDataSender {
+    fun sendData(currentTerm: Long, keyValues: List<KeyValue>)
+}
+
+class ReplicationAcceptorAdapter(
+    val term: Long,
+    private val delegate: ClusterReplicationAcceptor
+) : ReplicationAcceptor {
+    override fun accept(masterInfo: IdAndOffset): ReplicationDataSender {
+        return ReplicationDataSenderAdaptor(term, delegate.accept(term, masterInfo))
+    }
+}
+
+class ReplicationDataSenderAdaptor(
+    private val term: Long,
+    private val delegate: ClusterReplicationDataSender
+) : ReplicationDataSender {
+    override fun sendData(data: List<KeyValue>) {
+        delegate.sendData(term, data)
+    }
+}
+
+class EmptyStatus() : ReplicationLifecycle {
+
 }

@@ -1,6 +1,5 @@
-package com.icemelon404.bucket.network.util
+package com.icemelon404.bucket.common
 
-import io.netty.buffer.ByteBuf
 import java.nio.ByteBuffer
 
 val ByteBuffer.string
@@ -11,7 +10,7 @@ fun ByteBuffer.putString(str: String) =
         putInt(it.size)
         put(it)
     }
-fun bufferSize(str: String) = str.toByteArray().size + 4
+fun bufferSizeOf(str: String) = str.toByteArray().size + 4
 
 fun Boolean.toByte() =
     if (this) 1.toByte()

@@ -2,7 +2,9 @@ package com.icemelon404.bucket.replication
 
 import com.icemelon404.bucket.common.logger
 import com.icemelon404.bucket.replication.listener.IdAndOffset
-import com.icemelon404.bucket.replication.listener.ReplicationRequest
+import com.icemelon404.bucket.replication.listener.ReplicationAcceptor
+import com.icemelon404.bucket.replication.listener.ReplicationDataSender
+import com.icemelon404.bucket.replication.listener.ReplicationContext
 import com.icemelon404.bucket.storage.KeyValue
 import com.icemelon404.bucket.storage.KeyValueStorage
 import java.io.Closeable
@@ -11,72 +13,69 @@ import java.util.concurrent.Future
 import kotlin.math.min
 
 class Master(
+    private val id: String,
     private val scheduler: ExecutorService,
     private val replicatorFactory: ReplicatorFactory,
+    private val aof: OffsetAwareWritable,
     private val masterLog: MasterLog,
     private val storage: KeyValueStorage,
-    private val masterId: Long
-) : ReplicationStatus {
+) : ReplicationLifecycle, KeyValueStorage {
 
     private val replication = mutableMapOf<String, Replication>()
 
-    override fun onStart() {
-        masterLog.newMasterId(masterId)
-        logger().info { "Master state with id: ${masterLog.currentMaster}, last-id: ${masterLog.lastMaster}" }
+    override fun start() {
+        masterLog.rollWithNewMasterId(id, aof.offset)
+        logger().info { "Master state with id: ${masterLog.currentMasterId}, last-id: ${masterLog.lastMaster}" }
     }
 
-    override fun onReplicationRequest(request: ReplicationRequest) {
+    override fun onRequest(request: ReplicationContext, acceptor: ReplicationAcceptor) {
         if (!shouldIgnore(request))
-            startNewReplication(request)
+            startNewReplication(request, acceptor)
     }
 
-    private fun startNewReplication(request: ReplicationRequest) {
+    private fun startNewReplication(request: ReplicationContext, acceptor: ReplicationAcceptor) {
         logger().info { "Starting new replication id: ${request.replicationId} to ${request.instanceId}" }
         replication[request.instanceId]?.cancel()
-        replication[request.instanceId] = Replication(newReplicationTask(request), request.replicationId)
+        replication[request.instanceId] = Replication(newReplicationTask(request, acceptor), request.replicationId)
     }
 
-    private fun newReplicationTask(request: ReplicationRequest) =
+    private fun newReplicationTask(request: ReplicationContext, acceptor: ReplicationAcceptor) =
         scheduler.submit {
             val startOffset = replicationStartOffset(request.lastMaster)
-            request.accept(IdAndOffset(masterLog.currentMaster.id, startOffset))
-            sendReplicationData(request, startOffset, 500, 500)
+            val stream = acceptor.accept(IdAndOffset(masterLog.currentMasterId, startOffset))
+            sendReplicationData(stream, startOffset, 500, 500)
         }
 
     private fun replicationStartOffset(replicaIdOffset: IdAndOffset): Long {
-        return setOf(masterLog.currentMaster, masterLog.lastMaster)
+        return setOf(currentIdAndOffset(), masterLog.lastMaster)
             .find { it?.id == replicaIdOffset.id }
             ?.let { min(it.offset, replicaIdOffset.offset) }
             ?: 0
     }
 
+    private fun currentIdAndOffset(): IdAndOffset {
+        return IdAndOffset(masterLog.currentMasterId, aof.offset)
+    }
+
     private fun sendReplicationData(
-        request: ReplicationRequest,
+        request: ReplicationDataSender,
         startOffset: Long,
         timeout: Long,
         maxSize: Long
     ) {
-        replicatorFactory.newReplicator(startOffset).use {
-            var send = mutableListOf<KeyValue>()
-            var currentTimeout = System.currentTimeMillis() + timeout
-            it.withKeyValue { keyValue ->
-                if (keyValue != null)
-                    send += keyValue
-                if (send.size >= maxSize || currentTimeout < System.currentTimeMillis()) {
-                    try {
-                        request.sendData(send)
-                    } catch (e: Exception) {
-                        return@withKeyValue false
-                    }
-                    send = mutableListOf()
-                    currentTimeout = System.currentTimeMillis() + timeout
-                }
-                !Thread.currentThread().isInterrupted
+        val replicator = replicatorFactory.newReplicator(startOffset)
+
+        while (!Thread.currentThread().isInterrupted) {
+            val toSend = mutableListOf<KeyValue>()
+            val currentTimeout = System.currentTimeMillis() + timeout
+            while (toSend.size < maxSize && System.currentTimeMillis() < currentTimeout) {
+                replicator.next()?.also { toSend.add(it) }
             }
+            request.sendData(toSend)
         }
     }
 
-    private fun shouldIgnore(request: ReplicationRequest) =
+    private fun shouldIgnore(request: ReplicationContext) =
         replication[request.instanceId]?.let {
             it.replicationId >= request.replicationId
         } ?: false
@@ -97,7 +96,7 @@ interface ReplicatorFactory {
 }
 
 interface Replicator : Closeable {
-    fun withKeyValue(consumer: (KeyValue?) -> Boolean)
+    fun next(): KeyValue?
 }
 
 class Replication(

@@ -9,10 +9,10 @@ import kotlin.concurrent.withLock
 
 class Candidate(
     private val term: Term,
-    private val logIndex: AppendLogIndex,
+    private val logIndex: LogIndex,
     private val instances: Set<Instance>,
-    private val transition: Transition,
-    private val storage: Storage,
+    private val transition: ClusterStateMachine,
+    private val voteListener: VoteListener,
     private val executor: ScheduledExecutorService
 ) : InstanceStatus {
     private var receivedVoteCnt: Int = 0
@@ -23,7 +23,7 @@ class Candidate(
 
     override fun onStart() {
         logger().info { "Transition to candidate state" }
-        storage.disable()
+        voteListener.onVotePending()
         startPeriodicVoteRequest()
     }
 
@@ -37,9 +37,9 @@ class Candidate(
                 term.value++
                 receivedVoteCnt = 1
                 instances.forEach {
-                    try { it.requestVote(term.value, logIndex)
+                    try {
+                        it.requestVote(term.value, logIndex)
                     } catch (e: Exception) {
-
                         logger().warn { "Vote request failed to ${it.address}" }
                     }
                 }

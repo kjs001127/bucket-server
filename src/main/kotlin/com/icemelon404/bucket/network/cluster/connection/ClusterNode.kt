@@ -3,7 +3,7 @@ package com.icemelon404.bucket.network.cluster.connection
 import com.icemelon404.bucket.cluster.replication.ClusterAwareReplicationSource
 import com.icemelon404.bucket.cluster.replication.ClusterFollowerInfo
 import com.icemelon404.bucket.cluster.election.Instance
-import com.icemelon404.bucket.cluster.election.AppendLogIndex
+import com.icemelon404.bucket.cluster.election.LogIndex
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.network.cluster.election.HeartBeat
 import com.icemelon404.bucket.network.cluster.election.VoteRequest
@@ -64,7 +64,7 @@ class ClusterNode(
         channel.writeAndFlush(HeartBeat(term, serverAddress)).syncUninterruptibly()
     }
 
-    override fun requestVote(term: Long, index: AppendLogIndex) {
+    override fun requestVote(term: Long, index: LogIndex) {
         channel.writeAndFlush(VoteRequest(term, index.id, index.offset))
     }
 

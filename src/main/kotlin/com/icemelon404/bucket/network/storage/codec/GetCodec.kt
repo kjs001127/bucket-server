@@ -3,9 +3,9 @@ package com.icemelon404.bucket.network.storage.codec
 import com.icemelon404.bucket.network.common.MessageCodec
 import com.icemelon404.bucket.network.common.Packet
 import com.icemelon404.bucket.network.storage.message.Get
-import com.icemelon404.bucket.network.util.bufferSize
-import com.icemelon404.bucket.network.util.putString
-import com.icemelon404.bucket.network.util.string
+import com.icemelon404.bucket.common.bufferSizeOf
+import com.icemelon404.bucket.common.putString
+import com.icemelon404.bucket.common.string
 import java.nio.ByteBuffer
 
 class GetCodec(packetId: Int) : MessageCodec<Get>(Get::class, packetId) {
@@ -19,7 +19,7 @@ class GetCodec(packetId: Int) : MessageCodec<Get>(Get::class, packetId) {
     }
 
     override fun serialize(msg: Get): ByteArray {
-        return ByteBuffer.allocate(bufferSize(msg.key)).apply {
+        return ByteBuffer.allocate(bufferSizeOf(msg.key)).apply {
             putLong(msg.requestId)
             putString(msg.key)
         }.array()

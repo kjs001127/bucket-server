@@ -17,7 +17,7 @@ class ReplicationData(
     val data: List<KeyValue>
 )
 
-class ReplicationAccept(
+class ReplicationAcceptRequest(
     val term: Long,
     val replicationId: Long,
     val masterAddress: InstanceAddress,

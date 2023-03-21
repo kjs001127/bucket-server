@@ -1,6 +1,6 @@
 package com.icemelon404.bucket.network.cluster.election.handler
 
-import com.icemelon404.bucket.cluster.election.AppendLogIndex
+import com.icemelon404.bucket.cluster.election.LogIndex
 import com.icemelon404.bucket.cluster.election.listener.ClusterEventListener
 import com.icemelon404.bucket.cluster.election.listener.RequestVote
 import com.icemelon404.bucket.network.cluster.election.Vote
@@ -14,8 +14,8 @@ class VoteRequestHandler(private val listener : ClusterEventListener) : MessageH
         listener.onRequestVote(object : RequestVote {
             override val term: Long
                 get() = msg.term
-            override val logIndex: AppendLogIndex
-                get() = object: AppendLogIndex {
+            override val logIndex: LogIndex
+                get() = object: LogIndex {
                     override val id: Long
                         get() = msg.logId
                     override val offset: Long

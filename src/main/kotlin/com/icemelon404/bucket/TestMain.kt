@@ -26,10 +26,10 @@ import com.icemelon404.bucket.network.cluster.replication.handler.*
 import com.icemelon404.bucket.network.storage.codec.*
 import com.icemelon404.bucket.replication.Master
 import com.icemelon404.bucket.replication.Slave
-import com.icemelon404.bucket.storage.codec.SimpleKeyValueCodec
+import com.icemelon404.bucket.codec.SimpleKeyValueCodec
 import com.icemelon404.bucket.replication.storage.AppendOnlyFile
 import com.icemelon404.bucket.replication.storage.ReplicableStorage
-import com.icemelon404.bucket.log.FileLogRepository
+import com.icemelon404.bucket.replication.log.FileLogRepository
 import com.icemelon404.bucket.log.LogHandler
 import java.io.File
 import java.nio.file.Paths

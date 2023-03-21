@@ -7,12 +7,12 @@ import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
-class ClusterStateMachine(
-    private val storage: Storage,
+class ClusterStateMachine (
+    private val voteListener: VoteListener,
     private val executor: ScheduledExecutorService,
     private val term: Term,
-    private val logIndex: AppendLogIndex
-) : ClusterEventListener, Transition {
+    private val logIndex: LogIndex,
+) : ClusterEventListener  {
 
     private lateinit var instances: Set<Instance>
     private lateinit var status: InstanceStatus
@@ -21,7 +21,7 @@ class ClusterStateMachine(
 
     fun start(instances: Set<Instance>) {
         this.instances = instances
-        changeStatus(Follower(term, storage, this, executor, logIndex))
+        changeStatus(Follower(term, voteListener, this, executor, logIndex))
     }
 
     override fun onHeartBeat(claim: LeaderHeartBeat) {
@@ -43,16 +43,16 @@ class ClusterStateMachine(
 
     override fun onVoteReceived(voteTerm: Long) = lock.withLock { status.onVoteReceived(voteTerm) }
 
-    override fun toLeader() {
-        changeStatus(Leader(term, instances, this, executor, storage, logIndex))
+    fun toLeader() {
+        changeStatus(Leader(term, instances, this, executor, voteListener, logIndex))
     }
 
-    override fun toCandidate() {
-        changeStatus(Candidate(term, logIndex, instances, this, storage, executor))
+    fun toCandidate() {
+        changeStatus(Candidate(term, logIndex, instances, this, voteListener, executor))
     }
 
-    override fun toFollower() {
-        changeStatus(Follower(term, storage, this, executor, logIndex))
+    fun toFollower() {
+        changeStatus(Follower(term, voteListener, this, executor, logIndex))
     }
 
     private fun changeStatus(status: InstanceStatus) {

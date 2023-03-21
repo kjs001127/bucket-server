@@ -1,42 +1,45 @@
 package com.icemelon404.bucket.network.cluster.replication.handler
 
-import com.icemelon404.bucket.cluster.replication.ClusterReplicationRequest
+import com.icemelon404.bucket.cluster.replication.ClusterAwareReplicationListener
+import com.icemelon404.bucket.cluster.replication.ClusterReplicationAcceptor
+import com.icemelon404.bucket.cluster.replication.ClusterReplicationContext
+import com.icemelon404.bucket.cluster.replication.ClusterReplicationDataSender
 import com.icemelon404.bucket.common.InstanceAddress
-import com.icemelon404.bucket.network.cluster.replication.ReplicationAccept
+import com.icemelon404.bucket.network.cluster.replication.ReplicationAcceptRequest
 import com.icemelon404.bucket.network.cluster.replication.ReplicationData
 import com.icemelon404.bucket.network.cluster.replication.ReplicationRequest
 import com.icemelon404.bucket.network.common.MessageHandler
-import com.icemelon404.bucket.replication.listener.ReplicationListener
 import com.icemelon404.bucket.replication.listener.IdAndOffset
+import com.icemelon404.bucket.replication.listener.ReplicationContext
 import com.icemelon404.bucket.storage.KeyValue
 import io.netty.channel.ChannelHandlerContext
-import kotlin.properties.Delegates
 
 class ReplicationRequestHandler(
-    private val listener: ReplicationListener,
+    private val listener: ClusterAwareReplicationListener,
     private val storageAddress: InstanceAddress
-): MessageHandler<ReplicationRequest>(ReplicationRequest::class) {
+) : MessageHandler<ReplicationRequest>(ReplicationRequest::class) {
 
     override fun onMessage(ctx: ChannelHandlerContext?, msg: ReplicationRequest) {
-        val request = object: ClusterReplicationRequest {
-            override val term: Long
-                get() = msg.term
-            override var currentTerm by Delegates.notNull<Long>()
-            override val replicationId: Long
-                get() = msg.replicationId
-            override val instanceId: String
-                get() = msg.instanceId
-            override val lastMaster: IdAndOffset
-                get() = msg.lastMaster
 
-            override fun accept(masterInfo: IdAndOffset) {
-                ctx?.writeAndFlush(ReplicationAccept(currentTerm, msg.replicationId, storageAddress, masterInfo))
+        val sender = object : ClusterReplicationDataSender {
+            override fun sendData(currentTerm: Long, keyValues: List<KeyValue>) {
+                ctx?.writeAndFlush(ReplicationData(currentTerm, msg.replicationId, keyValues))
             }
 
-            override fun sendData(content: List<KeyValue>) {
-                ctx?.writeAndFlush(ReplicationData(currentTerm, msg.replicationId, content))
+        }
+        val request = object : ClusterReplicationAcceptor {
+            override fun accept(currentTerm: Long, masterInfo: IdAndOffset): ClusterReplicationDataSender {
+                ctx?.writeAndFlush(ReplicationAcceptRequest(currentTerm, msg.replicationId, storageAddress, masterInfo))
+                return sender;
             }
         }
-        listener.onReplicationRequest(request)
+
+        val rawContext = ReplicationContext(
+            msg.replicationId,
+            msg.instanceId,
+            msg.lastMaster
+        )
+
+        listener.onRequest(ClusterReplicationContext(rawContext, msg.term), request)
     }
 }
