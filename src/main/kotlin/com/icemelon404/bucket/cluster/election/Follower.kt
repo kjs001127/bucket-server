@@ -1,8 +1,8 @@
 package com.icemelon404.bucket.cluster.election
 
 import com.icemelon404.bucket.common.InstanceAddress
-import com.icemelon404.bucket.cluster.election.listener.LeaderHeartBeat
-import com.icemelon404.bucket.cluster.election.listener.RequestVote
+import com.icemelon404.bucket.cluster.election.api.LeaderHeartBeat
+import com.icemelon404.bucket.cluster.election.api.RequestVote
 import com.icemelon404.bucket.common.logger
 import java.util.concurrent.*
 

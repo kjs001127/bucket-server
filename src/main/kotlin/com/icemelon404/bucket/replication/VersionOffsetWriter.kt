@@ -1,6 +1,6 @@
 package com.icemelon404.bucket.replication
 
-import com.icemelon404.bucket.replication.listener.IdAndOffset
+import com.icemelon404.bucket.replication.api.IdAndOffset
 import com.icemelon404.bucket.storage.KeyValue
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
@@ -11,6 +11,9 @@ class VersionOffsetWriter(
     private val writable: OffsetAwareWritable,
 ) : VersionOffsetManager {
 
+    var lastVersionAndOffset: IdAndOffset? = null
+            private set
+
     private var lock = ReentrantReadWriteLock()
     override var versionAndOffset: IdAndOffset
         get() {
@@ -18,6 +21,7 @@ class VersionOffsetWriter(
         }
         set(value)  {
             lock.write {
+                lastVersionAndOffset = IdAndOffset(version, writable.offset)
                 version = value.id
                 writable.truncate(value.offset)
             }

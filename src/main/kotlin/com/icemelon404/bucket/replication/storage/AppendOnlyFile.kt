@@ -24,7 +24,7 @@ class AppendOnlyFile(
 
     init {
         file = openFile(StandardOpenOption.READ, StandardOpenOption.WRITE, StandardOpenOption.CREATE)
-        file.position(file.size())
+        truncate(0)
     }
 
     fun truncate(offset: Long) {

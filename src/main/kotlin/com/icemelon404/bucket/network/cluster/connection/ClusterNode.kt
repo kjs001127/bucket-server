@@ -65,7 +65,8 @@ class ClusterNode(
     }
 
     override fun requestVote(term: Long, index: LogIndex) {
-        channel.writeAndFlush(VoteRequest(term, index.id, index.offset))
+        var temAndOffset = index.termAndOffset
+        channel.writeAndFlush(VoteRequest(term, temAndOffset.term, temAndOffset.offset))
     }
 
     override fun requestReplication(request: ClusterFollowerInfo) {

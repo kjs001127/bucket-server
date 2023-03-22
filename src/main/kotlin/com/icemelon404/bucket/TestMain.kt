@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.icemelon404.bucket.cluster.election.*
+import com.icemelon404.bucket.cluster.replication.LogIndexAdapter
 import com.icemelon404.bucket.cluster.replication.ReplicationSourceConnectorAdapter
 import com.icemelon404.bucket.cluster.replication.ReplicationStatusMachine
 import com.icemelon404.bucket.common.InstanceAddress
@@ -27,10 +28,9 @@ import com.icemelon404.bucket.network.storage.codec.*
 import com.icemelon404.bucket.replication.Master
 import com.icemelon404.bucket.replication.Slave
 import com.icemelon404.bucket.codec.SimpleKeyValueCodec
+import com.icemelon404.bucket.replication.VersionOffsetWriter
 import com.icemelon404.bucket.replication.storage.AppendOnlyFile
 import com.icemelon404.bucket.replication.storage.ReplicableStorage
-import com.icemelon404.bucket.replication.log.FileLogRepository
-import com.icemelon404.bucket.log.LogHandler
 import java.io.File
 import java.nio.file.Paths
 import java.util.concurrent.Executors
@@ -55,16 +55,17 @@ fun main(arr: Array<String>) {
     val storage = ReplicableStorage {
         AppendOnlyFile(config.dataPath + File.separator + "aof", keyValueCodec)
     }
-    val logHandler = LogHandler(storage, FileLogRepository(config.dataPath))
-    val term = Term(logHandler.id)
+
+    val term = Term(0)
     val realConnector = ClusterNodeMatchingConnector(mutableSetOf())
     val connector = ReplicationSourceConnectorAdapter(realConnector, term)
+    val versionOffsetWriter = VersionOffsetWriter(0, storage)
     val followerBuilder = { masterAddress: InstanceAddress ->
-        Slave(clusterIp.toString(), masterAddress, scheduler, logHandler, storage, storage, connector::connect)
+        Slave(clusterIp.toString(), scheduler, versionOffsetWriter, connector.connect(masterAddress))
     }
-    val leaderBuilder = { logId: Long -> Master(scheduler, storage, logHandler, storage, logId) }
+    val leaderBuilder = { logId: Long -> Master(logId, scheduler, storage, versionOffsetWriter) }
     val replication = ReplicationStatusMachine(term, followerBuilder, leaderBuilder)
-    val cluster = ClusterStateMachine(replication, scheduler, term, logHandler)
+    val cluster = ClusterStateMachine(replication, scheduler, term, LogIndexAdapter(versionOffsetWriter))
 
     val codecs = listOf(
         DenyHeartBeatCodec(1),
@@ -106,8 +107,8 @@ fun main(arr: Array<String>) {
     )
 
     val storageHandler = listOf(
-        RedirectSetHandler(replication),
-        RedirectGetHandler(replication)
+        RedirectSetHandler(storage, replication),
+        RedirectGetHandler(storage, replication)
     )
 
     val storageServer = ClusterServer(storageCodec, storageHandler, storageIp.port)

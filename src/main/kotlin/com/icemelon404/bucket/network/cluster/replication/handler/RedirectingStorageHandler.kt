@@ -4,9 +4,7 @@ import com.icemelon404.bucket.network.cluster.replication.Redirect
 import com.icemelon404.bucket.network.common.MessageHandler
 import com.icemelon404.bucket.network.storage.message.*
 import com.icemelon404.bucket.network.storage.message.Set
-import com.icemelon404.bucket.replication.RedirectException
-import com.icemelon404.bucket.replication.listener.ReplicationListener
-import com.icemelon404.bucket.replication.listener.StorageStatus
+import com.icemelon404.bucket.replication.api.StorageStatus
 import com.icemelon404.bucket.storage.KeyValueStorage
 import io.netty.channel.ChannelHandlerContext
 
@@ -20,7 +18,7 @@ class RedirectGetHandler(
 
         if (currentStatus.readable) {
             ctx?.writeAndFlush(Value(msg.requestId, storage.read(msg.key)))
-        } else if (currentStatus.shouldRedirect) {
+        } else if (currentStatus.redirectAddress != null) {
             ctx?.writeAndFlush(Redirect(currentStatus.redirectAddress))
         } else {
             ctx?.writeAndFlush(Nack(msg.requestId))
@@ -38,7 +36,7 @@ class RedirectSetHandler(
         if (currentStatus.writable) {
             storage.write(msg.keyValue)
             ctx?.writeAndFlush(Ack(msg.requestId))
-        } else if (currentStatus.shouldRedirect) {
+        } else if (currentStatus.redirectAddress != null) {
             ctx?.writeAndFlush(Redirect(currentStatus.redirectAddress))
         } else {
             ctx?.writeAndFlush(Nack(msg.requestId))

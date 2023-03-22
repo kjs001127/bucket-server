@@ -1,8 +1,8 @@
 package com.icemelon404.bucket.cluster.election
 
-import com.icemelon404.bucket.cluster.election.listener.ClusterEventListener
-import com.icemelon404.bucket.cluster.election.listener.LeaderHeartBeat
-import com.icemelon404.bucket.cluster.election.listener.RequestVote
+import com.icemelon404.bucket.cluster.election.api.ClusterEventListener
+import com.icemelon404.bucket.cluster.election.api.LeaderHeartBeat
+import com.icemelon404.bucket.cluster.election.api.RequestVote
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock

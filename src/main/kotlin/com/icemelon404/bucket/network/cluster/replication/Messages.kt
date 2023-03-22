@@ -1,7 +1,7 @@
 package com.icemelon404.bucket.network.cluster.replication
 
 import com.icemelon404.bucket.common.InstanceAddress
-import com.icemelon404.bucket.replication.listener.IdAndOffset
+import com.icemelon404.bucket.replication.api.IdAndOffset
 import com.icemelon404.bucket.storage.KeyValue
 
 class ReplicationRequest(

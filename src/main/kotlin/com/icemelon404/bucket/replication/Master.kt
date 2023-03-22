@@ -1,36 +1,34 @@
 package com.icemelon404.bucket.replication
 
 import com.icemelon404.bucket.common.logger
-import com.icemelon404.bucket.replication.listener.IdAndOffset
-import com.icemelon404.bucket.replication.listener.ReplicationAcceptor
-import com.icemelon404.bucket.replication.listener.ReplicationDataSender
-import com.icemelon404.bucket.replication.listener.ReplicationContext
+import com.icemelon404.bucket.replication.api.*
 import com.icemelon404.bucket.storage.KeyValue
-import com.icemelon404.bucket.storage.KeyValueStorage
 import java.io.Closeable
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
 import kotlin.math.min
 
 class Master(
-    private val id: String,
+    private val id: Long,
     private val scheduler: ExecutorService,
     private val replicatorFactory: ReplicatorFactory,
-    private val aof: OffsetAwareWritable,
-    private val masterLog: MasterLog,
-    private val storage: KeyValueStorage,
-) : ReplicationLifecycle, KeyValueStorage {
+    private val aof: VersionOffsetWriter,
+) : ReplicationLifecycle {
 
     private val replication = mutableMapOf<String, Replication>()
 
     override fun start() {
-        masterLog.rollWithNewMasterId(id, aof.offset)
-        logger().info { "Master state with id: ${masterLog.currentMasterId}, last-id: ${masterLog.lastMaster}" }
+        aof.versionAndOffset = IdAndOffset(id, aof.versionAndOffset.offset)
+        logger().info { "Master state with id: ${aof.versionAndOffset.id}, last-id: ${aof.lastVersionAndOffset}" }
     }
 
     override fun onRequest(request: ReplicationContext, acceptor: ReplicationAcceptor) {
         if (!shouldIgnore(request))
             startNewReplication(request, acceptor)
+    }
+
+    override fun check(): Status {
+        return Status(readable = true, writable = true, redirectAddress = null)
     }
 
     private fun startNewReplication(request: ReplicationContext, acceptor: ReplicationAcceptor) {
@@ -42,19 +40,19 @@ class Master(
     private fun newReplicationTask(request: ReplicationContext, acceptor: ReplicationAcceptor) =
         scheduler.submit {
             val startOffset = replicationStartOffset(request.lastMaster)
-            val stream = acceptor.accept(IdAndOffset(masterLog.currentMasterId, startOffset))
+            val stream = acceptor.accept(IdAndOffset(aof.versionAndOffset.id, startOffset))
             sendReplicationData(stream, startOffset, 500, 500)
         }
 
     private fun replicationStartOffset(replicaIdOffset: IdAndOffset): Long {
-        return setOf(currentIdAndOffset(), masterLog.lastMaster)
+        return setOf(currentIdAndOffset(), aof.lastVersionAndOffset)
             .find { it?.id == replicaIdOffset.id }
             ?.let { min(it.offset, replicaIdOffset.offset) }
             ?: 0
     }
 
     private fun currentIdAndOffset(): IdAndOffset {
-        return IdAndOffset(masterLog.currentMasterId, aof.offset)
+        return aof.versionAndOffset
     }
 
     private fun sendReplicationData(
@@ -86,9 +84,6 @@ class Master(
             task.cancel()
     }
 
-    override fun write(keyValue: KeyValue) = storage.write(keyValue)
-
-    override fun read(key: String) = storage.read(key)
 }
 
 interface ReplicatorFactory {

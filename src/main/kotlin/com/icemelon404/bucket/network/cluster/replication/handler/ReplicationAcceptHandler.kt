@@ -4,7 +4,7 @@ import com.icemelon404.bucket.cluster.replication.ClusterAwareReplicationListene
 import com.icemelon404.bucket.cluster.replication.ClusterReplicationAccept
 import com.icemelon404.bucket.network.cluster.replication.ReplicationAcceptRequest
 import com.icemelon404.bucket.network.common.MessageHandler
-import com.icemelon404.bucket.replication.listener.ReplicationAccept
+import com.icemelon404.bucket.replication.api.ReplicationAccept
 import io.netty.channel.ChannelHandlerContext
 
 class ReplicationAcceptHandler(

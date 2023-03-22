@@ -2,9 +2,8 @@ package com.icemelon404.bucket.replication
 
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.common.logger
-import com.icemelon404.bucket.replication.listener.*
+import com.icemelon404.bucket.replication.api.*
 import com.icemelon404.bucket.storage.KeyValue
-import com.icemelon404.bucket.storage.KeyValueStorage
 import java.util.concurrent.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -77,6 +76,10 @@ class Slave(
             aof.versionAndOffset = accept.dataInfo
             logger().info { "Replication accepted with id:  ${currentIdAndOffset().id}" }
         }
+    }
+
+    override fun check(): Status {
+        return Status(readable=true, writable=false, this.replicationSrc.address)
     }
 }
 

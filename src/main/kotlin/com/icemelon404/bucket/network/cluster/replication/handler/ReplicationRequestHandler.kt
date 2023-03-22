@@ -9,8 +9,8 @@ import com.icemelon404.bucket.network.cluster.replication.ReplicationAcceptReque
 import com.icemelon404.bucket.network.cluster.replication.ReplicationData
 import com.icemelon404.bucket.network.cluster.replication.ReplicationRequest
 import com.icemelon404.bucket.network.common.MessageHandler
-import com.icemelon404.bucket.replication.listener.IdAndOffset
-import com.icemelon404.bucket.replication.listener.ReplicationContext
+import com.icemelon404.bucket.replication.api.IdAndOffset
+import com.icemelon404.bucket.replication.api.ReplicationContext
 import com.icemelon404.bucket.storage.KeyValue
 import io.netty.channel.ChannelHandlerContext
 

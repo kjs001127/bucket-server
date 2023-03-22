@@ -6,7 +6,7 @@ import com.icemelon404.bucket.network.common.Packet
 import com.icemelon404.bucket.common.bufferSizeOf
 import com.icemelon404.bucket.common.putString
 import com.icemelon404.bucket.common.string
-import com.icemelon404.bucket.replication.listener.IdAndOffset
+import com.icemelon404.bucket.replication.api.IdAndOffset
 import java.nio.ByteBuffer
 
 class ReplicationRequestCodec(packetId: Int) : MessageCodec<ReplicationRequest>(ReplicationRequest::class, packetId) {

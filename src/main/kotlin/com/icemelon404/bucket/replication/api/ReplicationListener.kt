@@ -1,4 +1,4 @@
-package com.icemelon404.bucket.replication.listener
+package com.icemelon404.bucket.replication.api
 
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.storage.KeyValue
@@ -6,8 +6,7 @@ import com.icemelon404.bucket.storage.KeyValue
 data class Status(
     val readable: Boolean,
     val writable: Boolean,
-    val shouldRedirect: Boolean,
-    val redirectAddress: InstanceAddress,
+    val redirectAddress: InstanceAddress?,
 )
 
 interface StorageStatus {

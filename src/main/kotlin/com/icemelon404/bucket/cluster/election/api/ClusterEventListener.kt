@@ -1,4 +1,4 @@
-package com.icemelon404.bucket.cluster.election.listener
+package com.icemelon404.bucket.cluster.election.api
 
 interface ClusterEventListener {
     fun onHeartBeat(claim: LeaderHeartBeat) {}
