@@ -1,7 +1,7 @@
 package com.icemelon404.bucket.network.cluster.connection
 
-import com.icemelon404.bucket.cluster.replication.ClusterAwareReplicationSource
-import com.icemelon404.bucket.cluster.replication.ClusterFollowerInfo
+import com.icemelon404.bucket.adapter.ClusterAwareReplicationSource
+import com.icemelon404.bucket.adapter.ClusterFollowerInfo
 import com.icemelon404.bucket.cluster.election.Instance
 import com.icemelon404.bucket.cluster.election.LogIndex
 import com.icemelon404.bucket.common.InstanceAddress

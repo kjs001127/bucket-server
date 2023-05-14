@@ -1,7 +1,7 @@
 package com.icemelon404.bucket.network.cluster.connection
 
-import com.icemelon404.bucket.cluster.replication.ClusterAwareReplicationSource
-import com.icemelon404.bucket.cluster.replication.ClusterAwareReplicationSourceConnector
+import com.icemelon404.bucket.adapter.ClusterAwareReplicationSource
+import com.icemelon404.bucket.adapter.ClusterAwareReplicationSourceConnector
 import com.icemelon404.bucket.common.InstanceAddress
 
 class ClusterNodeMatchingConnector(

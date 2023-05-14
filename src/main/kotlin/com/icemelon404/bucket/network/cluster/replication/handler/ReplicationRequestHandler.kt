@@ -1,9 +1,9 @@
 package com.icemelon404.bucket.network.cluster.replication.handler
 
-import com.icemelon404.bucket.cluster.replication.ClusterAwareReplicationListener
-import com.icemelon404.bucket.cluster.replication.ClusterReplicationAcceptor
-import com.icemelon404.bucket.cluster.replication.ClusterReplicationContext
-import com.icemelon404.bucket.cluster.replication.ClusterReplicationDataSender
+import com.icemelon404.bucket.adapter.ClusterAwareReplicationListener
+import com.icemelon404.bucket.adapter.ClusterReplicationAcceptor
+import com.icemelon404.bucket.adapter.ClusterReplicationContext
+import com.icemelon404.bucket.adapter.ClusterReplicationDataSender
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.network.cluster.replication.ReplicationAcceptRequest
 import com.icemelon404.bucket.network.cluster.replication.ReplicationData
@@ -22,8 +22,10 @@ class ReplicationRequestHandler(
     override fun onMessage(ctx: ChannelHandlerContext?, msg: ReplicationRequest) {
 
         val sender = object : ClusterReplicationDataSender {
+            var seqNo: Long = 0
             override fun sendData(currentTerm: Long, keyValues: List<KeyValue>) {
-                ctx?.writeAndFlush(ReplicationData(currentTerm, msg.replicationId, keyValues))
+                ctx?.writeAndFlush(ReplicationData(currentTerm, msg.replicationId, seqNo, keyValues))
+                seqNo++
             }
 
         }

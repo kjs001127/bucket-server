@@ -1,7 +1,7 @@
 package com.icemelon404.bucket.network.cluster.replication.handler
 
-import com.icemelon404.bucket.cluster.replication.ClusterAwareReplicationListener
-import com.icemelon404.bucket.cluster.replication.ClusterReplicationAccept
+import com.icemelon404.bucket.adapter.ClusterAwareReplicationListener
+import com.icemelon404.bucket.adapter.ClusterReplicationAccept
 import com.icemelon404.bucket.network.cluster.replication.ReplicationAcceptRequest
 import com.icemelon404.bucket.network.common.MessageHandler
 import com.icemelon404.bucket.replication.api.ReplicationAccept

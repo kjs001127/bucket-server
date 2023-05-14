@@ -18,6 +18,7 @@ class Slave(
     private lateinit var requestJob: ScheduledFuture<*>
     private val lock = ReentrantLock()
     private var replicationId: Long = 0
+    private var replicationSeqNo: Long = 0
 
     @Volatile
     private var timeout = System.currentTimeMillis()
@@ -33,6 +34,7 @@ class Slave(
     private fun requestReplication() {
         lock.withLock {
             replicationId++
+            replicationSeqNo = 0
             replicationSrc.requestReplication(
                 FollowerInfo(
                     instanceId,
@@ -50,18 +52,17 @@ class Slave(
         timeout = System.currentTimeMillis() + 3000
     }
 
-    override fun onData(replication: DataReplication) {
-        if (replication.replicationId != replicationId)
+    override fun onData(replication: DataReplication) = lock.withLock {
+        if (replication.replicationId != replicationId || replication.seqNo != replicationSeqNo)
             return
+        replicationSeqNo++
         writeData(replication.content)
     }
 
     private fun writeData(content: List<KeyValue>) {
-        lock.withLock {
-            refreshRequestTimeout()
-            if (content.isNotEmpty())
-                aof.write(content)
-        }
+        refreshRequestTimeout()
+        if (content.isNotEmpty())
+            aof.write(content)
     }
 
     override fun close() {
@@ -79,7 +80,7 @@ class Slave(
     }
 
     override fun check(): Status {
-        return Status(readable=true, writable=false, this.replicationSrc.address)
+        return Status(readable = true, writable = false, this.replicationSrc.address)
     }
 }
 

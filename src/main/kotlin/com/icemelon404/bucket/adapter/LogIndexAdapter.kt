@@ -1,4 +1,4 @@
-package com.icemelon404.bucket.cluster.replication
+package com.icemelon404.bucket.adapter
 
 import com.icemelon404.bucket.cluster.election.LogIndex
 import com.icemelon404.bucket.cluster.election.TermAndOffset

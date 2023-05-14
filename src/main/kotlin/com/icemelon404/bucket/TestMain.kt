@@ -4,9 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.KotlinModule
 import com.icemelon404.bucket.cluster.election.*
-import com.icemelon404.bucket.cluster.replication.LogIndexAdapter
-import com.icemelon404.bucket.cluster.replication.ReplicationSourceConnectorAdapter
-import com.icemelon404.bucket.cluster.replication.ReplicationStatusMachine
+import com.icemelon404.bucket.adapter.LogIndexAdapter
+import com.icemelon404.bucket.adapter.ReplicationSourceConnectorAdapter
+import com.icemelon404.bucket.adapter.ReplicationStatusMachine
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.network.cluster.election.codec.DenyHeartBeatCodec
 import com.icemelon404.bucket.network.cluster.election.codec.HeartBeatCodec

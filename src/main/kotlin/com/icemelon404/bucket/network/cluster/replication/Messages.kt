@@ -14,6 +14,7 @@ class ReplicationRequest(
 class ReplicationData(
     val term: Long,
     val replicationId: Long,
+    val seqNo: Long,
     val data: List<KeyValue>
 )
 

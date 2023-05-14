@@ -15,10 +15,11 @@ class ReplicationDataCodec(
         with(ByteBuffer.wrap(packet.body)) {
             val term = long
             val replicationId = long
+            val seqNo = long
             val keyValues = codec.deserialize(this)
                 .takeUnless { hasRemaining() }
                 ?: error("Error in replication data packet: ${remaining()} extra bytes")
-            return ReplicationData(term, replicationId, keyValues)
+            return ReplicationData(term, replicationId, seqNo, keyValues)
         }
     }
 
@@ -28,6 +29,7 @@ class ReplicationDataCodec(
         return ByteBuffer.allocate(data.limit() + 16).apply {
             putLong(msg.term)
             putLong(msg.replicationId)
+            putLong(msg.seqNo)
             put(data)
         }.array()
     }

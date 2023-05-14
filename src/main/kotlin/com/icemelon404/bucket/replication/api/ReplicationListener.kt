@@ -37,6 +37,7 @@ interface ReplicationDataSender {
 
 class DataReplication(
     val content: List<KeyValue>,
+    val seqNo: Long,
     val replicationId: Long
 )
 
