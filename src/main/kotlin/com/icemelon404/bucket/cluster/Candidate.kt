@@ -1,7 +1,7 @@
-package com.icemelon404.bucket.cluster.election
+package com.icemelon404.bucket.cluster
 
-import com.icemelon404.bucket.cluster.election.api.LeaderHeartBeat
-import com.icemelon404.bucket.cluster.election.api.RequestVote
+import com.icemelon404.bucket.cluster.api.LeaderHeartBeat
+import com.icemelon404.bucket.cluster.api.RequestVote
 import com.icemelon404.bucket.common.logger
 import java.util.concurrent.*
 import java.util.concurrent.locks.ReentrantLock

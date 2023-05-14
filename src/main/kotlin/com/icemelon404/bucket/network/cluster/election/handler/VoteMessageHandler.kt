@@ -1,6 +1,6 @@
 package com.icemelon404.bucket.network.cluster.election.handler
 
-import com.icemelon404.bucket.cluster.election.api.ClusterEventListener
+import com.icemelon404.bucket.cluster.api.ClusterEventListener
 import com.icemelon404.bucket.network.cluster.election.Vote
 import com.icemelon404.bucket.network.common.MessageHandler
 import io.netty.channel.ChannelHandlerContext

@@ -1,7 +1,7 @@
 package com.icemelon404.bucket.adapter
 
-import com.icemelon404.bucket.cluster.election.VoteListener
-import com.icemelon404.bucket.cluster.election.Term
+import com.icemelon404.bucket.cluster.VoteListener
+import com.icemelon404.bucket.cluster.Term
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.replication.api.*
 import com.icemelon404.bucket.replication.ReplicationLifecycle

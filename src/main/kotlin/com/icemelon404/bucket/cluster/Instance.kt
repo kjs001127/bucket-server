@@ -1,4 +1,4 @@
-package com.icemelon404.bucket.cluster.election
+package com.icemelon404.bucket.cluster
 
 import com.icemelon404.bucket.common.InstanceAddress
 

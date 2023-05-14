@@ -1,8 +1,8 @@
-package com.icemelon404.bucket.cluster.election
+package com.icemelon404.bucket.cluster
 
-import com.icemelon404.bucket.cluster.election.api.ClusterEventListener
-import com.icemelon404.bucket.cluster.election.api.LeaderHeartBeat
-import com.icemelon404.bucket.cluster.election.api.RequestVote
+import com.icemelon404.bucket.cluster.api.ClusterEventListener
+import com.icemelon404.bucket.cluster.api.LeaderHeartBeat
+import com.icemelon404.bucket.cluster.api.RequestVote
 import java.util.concurrent.ScheduledExecutorService
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -12,7 +12,7 @@ class ClusterStateMachine (
     private val executor: ScheduledExecutorService,
     private val term: Term,
     private val logIndex: LogIndex,
-) : ClusterEventListener  {
+) : ClusterEventListener {
 
     private lateinit var instances: Set<Instance>
     private lateinit var status: InstanceStatus

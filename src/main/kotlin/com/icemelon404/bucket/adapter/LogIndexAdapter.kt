@@ -1,7 +1,7 @@
 package com.icemelon404.bucket.adapter
 
-import com.icemelon404.bucket.cluster.election.LogIndex
-import com.icemelon404.bucket.cluster.election.TermAndOffset
+import com.icemelon404.bucket.cluster.LogIndex
+import com.icemelon404.bucket.cluster.TermAndOffset
 import com.icemelon404.bucket.replication.VersionOffsetManager
 
 class LogIndexAdapter(

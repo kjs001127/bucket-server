@@ -1,8 +1,8 @@
 package com.icemelon404.bucket.network.cluster.election.handler
 
-import com.icemelon404.bucket.cluster.election.api.ClusterEventListener
+import com.icemelon404.bucket.cluster.api.ClusterEventListener
 import com.icemelon404.bucket.common.InstanceAddress
-import com.icemelon404.bucket.cluster.election.api.LeaderHeartBeat
+import com.icemelon404.bucket.cluster.api.LeaderHeartBeat
 import com.icemelon404.bucket.network.cluster.election.HeartBeat
 import com.icemelon404.bucket.network.cluster.election.HeartBeatDeny
 import com.icemelon404.bucket.network.common.MessageHandler

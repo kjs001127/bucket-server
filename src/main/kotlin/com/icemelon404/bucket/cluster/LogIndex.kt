@@ -1,4 +1,4 @@
-package com.icemelon404.bucket.cluster.election
+package com.icemelon404.bucket.cluster
 
 data class TermAndOffset(val term: Long, val offset: Long)
 interface LogIndex: Comparable<LogIndex> {

@@ -1,9 +1,9 @@
 package com.icemelon404.bucket.network.cluster.election.handler
 
-import com.icemelon404.bucket.cluster.election.LogIndex
-import com.icemelon404.bucket.cluster.election.TermAndOffset
-import com.icemelon404.bucket.cluster.election.api.ClusterEventListener
-import com.icemelon404.bucket.cluster.election.api.RequestVote
+import com.icemelon404.bucket.cluster.LogIndex
+import com.icemelon404.bucket.cluster.TermAndOffset
+import com.icemelon404.bucket.cluster.api.ClusterEventListener
+import com.icemelon404.bucket.cluster.api.RequestVote
 import com.icemelon404.bucket.network.cluster.election.Vote
 import com.icemelon404.bucket.network.cluster.election.VoteRequest
 import com.icemelon404.bucket.network.common.MessageHandler

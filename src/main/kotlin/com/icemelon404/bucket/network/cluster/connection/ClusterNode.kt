@@ -2,8 +2,8 @@ package com.icemelon404.bucket.network.cluster.connection
 
 import com.icemelon404.bucket.adapter.ClusterAwareReplicationSource
 import com.icemelon404.bucket.adapter.ClusterFollowerInfo
-import com.icemelon404.bucket.cluster.election.Instance
-import com.icemelon404.bucket.cluster.election.LogIndex
+import com.icemelon404.bucket.cluster.Instance
+import com.icemelon404.bucket.cluster.LogIndex
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.network.cluster.election.HeartBeat
 import com.icemelon404.bucket.network.cluster.election.VoteRequest
