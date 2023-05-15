@@ -26,7 +26,7 @@ class ReplicationDataCodec(
 
     override fun serialize(msg: ReplicationData): ByteArray {
         val data = codec.serialize(msg.data)
-        return ByteBuffer.allocate(data.limit() + 16).apply {
+        return ByteBuffer.allocate(data.limit() + Long.SIZE_BYTES*3).apply {
             putLong(msg.term)
             putLong(msg.replicationId)
             putLong(msg.seqNo)

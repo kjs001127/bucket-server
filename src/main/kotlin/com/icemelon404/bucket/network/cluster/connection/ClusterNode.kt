@@ -44,7 +44,7 @@ class ClusterNode(
     fun connect() {
         channel = bootstrap.connect(address.dest, address.port).channel()
         channel.closeFuture().addListener {
-            channel.eventLoop().schedule(::connect, 2000, TimeUnit.MILLISECONDS)
+            channel.eventLoop().schedule(::connect, 1000, TimeUnit.MILLISECONDS)
         }
     }
 
