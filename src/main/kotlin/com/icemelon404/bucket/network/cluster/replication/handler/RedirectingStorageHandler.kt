@@ -1,26 +1,24 @@
 package com.icemelon404.bucket.network.cluster.replication.handler
 
+import com.icemelon404.bucket.adapter.storage.RedirectException
 import com.icemelon404.bucket.network.cluster.replication.Redirect
 import com.icemelon404.bucket.network.common.MessageHandler
 import com.icemelon404.bucket.network.storage.message.*
 import com.icemelon404.bucket.network.storage.message.Set
-import com.icemelon404.bucket.replication.api.StorageStatus
 import com.icemelon404.bucket.storage.KeyValueStorage
 import io.netty.channel.ChannelHandlerContext
 
 class RedirectGetHandler(
     private val storage: KeyValueStorage,
-    private val status: StorageStatus,
 ) : MessageHandler<Get>(Get::class) {
 
     override fun onMessage(ctx: ChannelHandlerContext?, msg: Get) {
-        val currentStatus = this.status.check()
 
-        if (currentStatus.readable) {
+        try {
             ctx?.writeAndFlush(Value(msg.requestId, storage.read(msg.key)))
-        } else if (currentStatus.redirectAddress != null) {
-            ctx?.writeAndFlush(Redirect(currentStatus.redirectAddress))
-        } else {
+        } catch (e : RedirectException) {
+            ctx?.writeAndFlush(Redirect(e.to))
+        } catch (e : Exception) {
             ctx?.writeAndFlush(Nack(msg.requestId))
         }
     }
@@ -28,17 +26,14 @@ class RedirectGetHandler(
 
 class RedirectSetHandler(
     private val storage: KeyValueStorage,
-    private val status: StorageStatus,
 ) : MessageHandler<Set>(Set::class) {
     override fun onMessage(ctx: ChannelHandlerContext?, msg: Set) {
-        val currentStatus = this.status.check()
-
-        if (currentStatus.writable) {
+        try {
             storage.write(msg.keyValue)
             ctx?.writeAndFlush(Ack(msg.requestId))
-        } else if (currentStatus.redirectAddress != null) {
-            ctx?.writeAndFlush(Redirect(currentStatus.redirectAddress))
-        } else {
+        } catch (e : RedirectException) {
+            ctx?.writeAndFlush(Redirect(e.to))
+        } catch (e : Exception) {
             ctx?.writeAndFlush(Nack(msg.requestId))
         }
     }

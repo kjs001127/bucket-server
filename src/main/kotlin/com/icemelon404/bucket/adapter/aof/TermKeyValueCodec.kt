@@ -1,4 +1,4 @@
-package com.icemelon404.bucket.codec
+package com.icemelon404.bucket.adapter.aof
 
 import com.icemelon404.bucket.common.sizeOfString
 import com.icemelon404.bucket.common.putString
@@ -6,9 +6,11 @@ import com.icemelon404.bucket.common.string
 import com.icemelon404.bucket.storage.KeyValue
 import java.nio.ByteBuffer
 
-class SimpleKeyValueCodec: KeyValueCodec {
+data class TermKeyValue(val term: Long, val keyValue: KeyValue)
 
-    override fun serialize(keyValue: List<KeyValue>): ByteBuffer {
+class TermKeyValueCodec {
+
+    fun serialize(keyValue: List<TermKeyValue>): ByteBuffer {
         val bufferSize = keyValue.sumOf { bufferSize(it) }
         return ByteBuffer.allocate(bufferSize).apply {
             keyValue.forEach { write(it) }
@@ -16,19 +18,20 @@ class SimpleKeyValueCodec: KeyValueCodec {
         }
     }
 
-    private fun ByteBuffer.write(keyValue: KeyValue) {
-        putString(keyValue.key)
-        keyValue.value?.let { value->
+    private fun ByteBuffer.write(data: TermKeyValue) {
+        putLong(data.term)
+        putString(data.keyValue.key)
+        data.keyValue.value?.let { value->
             putInt(value.size)
             put(value)
         }?: putInt(0)
     }
 
-    private fun bufferSize(keyValue: KeyValue) =
-        sizeOfString(keyValue.key) + Integer.SIZE + (keyValue.value?.size?:0)
+    private fun bufferSize(data: TermKeyValue) =
+        Long.SIZE_BYTES + sizeOfString(data.keyValue.key) + Integer.SIZE + (data.keyValue.value?.size?:0)
 
-    override fun deserialize(buffer: ByteBuffer): List<KeyValue> {
-        val ret = mutableListOf<KeyValue>()
+    fun deserialize(buffer: ByteBuffer): List<TermKeyValue> {
+        val ret = mutableListOf<TermKeyValue>()
         while (true) {
             buffer.mark()
             try {
@@ -40,10 +43,11 @@ class SimpleKeyValueCodec: KeyValueCodec {
         }
     }
 
-    private fun ByteBuffer.read(): KeyValue {
+    private fun ByteBuffer.read(): TermKeyValue {
+        val term = long
         val key = string
         val valueSize = int
         val value = ByteArray(valueSize).also { get(it) }
-        return KeyValue(key, value)
+        return TermKeyValue(term, KeyValue(key, value))
     }
 }

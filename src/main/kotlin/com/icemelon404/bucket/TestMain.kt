@@ -3,35 +3,37 @@ package com.icemelon404.bucket
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import com.icemelon404.bucket.adapter.LogIndexAdapter
-import com.icemelon404.bucket.adapter.ReplicationSourceConnectorAdapter
-import com.icemelon404.bucket.adapter.ReplicationStatusMachine
-import com.icemelon404.bucket.cluster.ClusterStateMachine
-import com.icemelon404.bucket.cluster.Term
+import com.icemelon404.bucket.adapter.source.ReplicationSourceConnectorAdapter
+import com.icemelon404.bucket.adapter.core.ReplicationStateHandler
+import com.icemelon404.bucket.adapter.aof.AppendOnlyFile
+import com.icemelon404.bucket.adapter.storage.FollowerStorage
+import com.icemelon404.bucket.adapter.storage.*
+import com.icemelon404.bucket.cluster.core.ConsensusStateHandler
+import com.icemelon404.bucket.cluster.core.Term
+import com.icemelon404.bucket.codec.SimpleKeyValueCodec
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.network.cluster.election.codec.DenyHeartBeatCodec
 import com.icemelon404.bucket.network.cluster.election.codec.HeartBeatCodec
 import com.icemelon404.bucket.network.cluster.election.codec.VoteCodec
 import com.icemelon404.bucket.network.cluster.election.codec.VoteRequestCodec
 import com.icemelon404.bucket.network.cluster.connection.ClusterNode
-import com.icemelon404.bucket.network.cluster.connection.ClusterNodeMatchingConnector
+import com.icemelon404.bucket.network.cluster.replication.request.ClusterNodeMatchingConnector
 import com.icemelon404.bucket.network.cluster.connection.ClusterServer
 import com.icemelon404.bucket.network.cluster.election.handler.DenyHeartBeatHandler
 import com.icemelon404.bucket.network.cluster.election.handler.HeartBeatHandler
 import com.icemelon404.bucket.network.cluster.election.handler.VoteMessageHandler
 import com.icemelon404.bucket.network.cluster.election.handler.VoteRequestHandler
+import com.icemelon404.bucket.network.cluster.election.request.PeerRequester
 import com.icemelon404.bucket.network.cluster.replication.codec.RedirectCodec
 import com.icemelon404.bucket.network.cluster.replication.codec.ReplicationAcceptCodec
 import com.icemelon404.bucket.network.cluster.replication.codec.ReplicationDataCodec
 import com.icemelon404.bucket.network.cluster.replication.codec.ReplicationRequestCodec
 import com.icemelon404.bucket.network.cluster.replication.handler.*
 import com.icemelon404.bucket.network.storage.codec.*
-import com.icemelon404.bucket.replication.Master
-import com.icemelon404.bucket.replication.Slave
-import com.icemelon404.bucket.codec.SimpleKeyValueCodec
-import com.icemelon404.bucket.replication.VersionOffsetWriter
-import com.icemelon404.bucket.replication.storage.AppendOnlyFile
-import com.icemelon404.bucket.replication.storage.ReplicableStorage
+import com.icemelon404.bucket.replication.core.Master
+import com.icemelon404.bucket.replication.core.Slave
+import com.icemelon404.bucket.replication.core.VersionOffsetManager
+import com.icemelon404.bucket.storage.MemoryStorage
 import java.io.File
 import java.nio.file.Paths
 import java.util.concurrent.Executors
@@ -52,28 +54,35 @@ fun main(arr: Array<String>) {
     val storageIp = InstanceAddress(host, port)
 
     Paths.get(config.dataPath).createDirectories()
-    val keyValueCodec = SimpleKeyValueCodec()
-    val storage = ReplicableStorage {
-        AppendOnlyFile(config.dataPath + File.separator + "aof", keyValueCodec)
+    val aof = AppendOnlyFile(config.dataPath + File.separator + "aof")
+    val storage = MemoryStorage()
+
+    aof.load().forEach {
+        storage.write(it.keyValue)
     }
+
+    val followerStorage = FollowerStorage(aof, storage)
+    val leaderStorage = LeaderStorage(aof, storage)
+
+    val followerLeaderStorage = FollowerLeaderStorage(leaderStorage, followerStorage)
 
     val term = Term(0)
     val realConnector = ClusterNodeMatchingConnector(mutableSetOf())
     val connector = ReplicationSourceConnectorAdapter(realConnector, term)
-    val versionOffsetWriter = VersionOffsetWriter(0, storage)
+    val versionManager = VersionOffsetManager()
     val followerBuilder = { masterAddress: InstanceAddress ->
-        Slave(clusterIp.toString(), scheduler, versionOffsetWriter, connector.connect(masterAddress))
+        Slave(clusterIp.toString(), scheduler, versionManager, followerStorage, connector.connect(masterAddress))
     }
-    val leaderBuilder = { logId: Long -> Master(logId, scheduler, storage, versionOffsetWriter) }
-    val replication = ReplicationStatusMachine(term, followerBuilder, leaderBuilder)
-    val cluster = ClusterStateMachine(replication, scheduler, term, LogIndexAdapter(versionOffsetWriter))
+    val leaderBuilder = { logId: Long -> Master(scheduler, leaderStorage, leaderStorage, versionManager) }
+    val replication = ReplicationStateHandler(term, followerLeaderStorage, followerBuilder, leaderBuilder)
+    val cluster = ConsensusStateHandler(replication, scheduler, term, aof)
 
     val codecs = listOf(
         DenyHeartBeatCodec(1),
         HeartBeatCodec(2),
         VoteCodec(3),
         VoteRequestCodec(4),
-        ReplicationDataCodec(5, keyValueCodec),
+        ReplicationDataCodec(5),
         ReplicationRequestCodec(6),
         ReplicationAcceptCodec(7)
     )
@@ -93,7 +102,7 @@ fun main(arr: Array<String>) {
             InstanceAddress(it[0], it[1].toInt())
         }
     }.map {
-        ClusterNode(it, codecs, handlers, clusterIp)
+        ClusterNode(it, codecs, handlers)
     }.toSet()
 
     val server = ClusterServer(codecs, handlers, clusterIp.port)
@@ -102,19 +111,19 @@ fun main(arr: Array<String>) {
         AckCodec(1),
         GetCodec(2),
         NackCodec(3),
-        SetCodec(4, keyValueCodec),
+        SetCodec(4, SimpleKeyValueCodec()),
         ValueCodec(5),
         RedirectCodec(6)
     )
 
     val storageHandler = listOf(
-        RedirectSetHandler(storage, replication),
-        RedirectGetHandler(storage, replication)
+        RedirectSetHandler(replication),
+        RedirectGetHandler(replication)
     )
 
     val storageServer = ClusterServer(storageCodec, storageHandler, storageIp.port)
     storageServer.start()
     nodes.forEach { realConnector.addInstance(it); it.connect() }
-    cluster.start(nodes)
+    cluster.start(nodes.map{ PeerRequester(it, clusterIp) }.toSet())
     server.start()
 }

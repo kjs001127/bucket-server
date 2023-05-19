@@ -7,8 +7,7 @@ import com.icemelon404.bucket.codec.KeyValueCodec
 import java.nio.ByteBuffer
 
 class ReplicationDataCodec(
-    packetId: Int,
-    val codec: KeyValueCodec
+    packetId: Int
 ) : MessageCodec<ReplicationData>(ReplicationData::class, packetId) {
 
     override fun resolve(packet: Packet): ReplicationData {
@@ -16,21 +15,18 @@ class ReplicationDataCodec(
             val term = long
             val replicationId = long
             val seqNo = long
-            val keyValues = codec.deserialize(this)
-                .takeUnless { hasRemaining() }
-                ?: error("Error in replication data packet: ${remaining()} extra bytes")
-            return ReplicationData(term, replicationId, seqNo, keyValues)
+            val data = ByteArray(remaining()).also { get(it) }
+            return ReplicationData(term, replicationId, seqNo, data)
         }
     }
 
 
     override fun serialize(msg: ReplicationData): ByteArray {
-        val data = codec.serialize(msg.data)
-        return ByteBuffer.allocate(data.limit() + Long.SIZE_BYTES*3).apply {
+        return ByteBuffer.allocate(msg.data.size + Long.SIZE_BYTES*3).apply {
             putLong(msg.term)
             putLong(msg.replicationId)
             putLong(msg.seqNo)
-            put(data)
+            put(msg.data)
         }.array()
     }
 

@@ -1,7 +1,7 @@
 package com.icemelon404.bucket.adapter
 
 import com.icemelon404.bucket.common.InstanceAddress
-import com.icemelon404.bucket.replication.FollowerInfo
+import com.icemelon404.bucket.replication.core.FollowerInfo
 
 interface ClusterAwareReplicationSource {
     val address: InstanceAddress

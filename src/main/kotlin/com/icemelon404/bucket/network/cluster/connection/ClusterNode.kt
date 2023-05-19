@@ -1,13 +1,6 @@
 package com.icemelon404.bucket.network.cluster.connection
 
-import com.icemelon404.bucket.adapter.ClusterAwareReplicationSource
-import com.icemelon404.bucket.adapter.ClusterFollowerInfo
-import com.icemelon404.bucket.cluster.Instance
-import com.icemelon404.bucket.cluster.LogIndex
 import com.icemelon404.bucket.common.InstanceAddress
-import com.icemelon404.bucket.network.cluster.election.HeartBeat
-import com.icemelon404.bucket.network.cluster.election.VoteRequest
-import com.icemelon404.bucket.network.cluster.replication.ReplicationRequest
 import com.icemelon404.bucket.network.common.MessageHandler
 import com.icemelon404.bucket.network.common.ByteToPacketCodec
 import com.icemelon404.bucket.network.common.MessageCodec
@@ -20,11 +13,10 @@ import io.netty.channel.socket.nio.NioSocketChannel
 import java.util.concurrent.TimeUnit
 
 class ClusterNode(
-    override val address: InstanceAddress,
+    val address: InstanceAddress,
     private val codecs: List<MessageCodec<*>>,
     private val handlers: List<MessageHandler<*>>,
-    private val serverAddress: InstanceAddress
-) : Instance, ClusterAwareReplicationSource {
+) {
 
     @Volatile
     private lateinit var channel: Channel
@@ -60,23 +52,8 @@ class ClusterNode(
             }
         }
 
-    override fun heartBeat(term: Long) {
-        channel.writeAndFlush(HeartBeat(term, serverAddress)).syncUninterruptibly()
+    fun write(obj: Any) {
+        channel.writeAndFlush(obj)
     }
 
-    override fun requestVote(term: Long, index: LogIndex) {
-        var temAndOffset = index.termAndOffset
-        channel.writeAndFlush(VoteRequest(term, temAndOffset.term, temAndOffset.offset))
-    }
-
-    override fun requestReplication(request: ClusterFollowerInfo) {
-        channel.writeAndFlush(
-            ReplicationRequest(
-                request.term,
-                request.info.instanceId,
-                request.info.replicationId,
-                request.info.lastMaster
-            )
-        )
-    }
 }
