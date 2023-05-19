@@ -74,7 +74,7 @@ fun main(arr: Array<String>) {
         Slave(clusterIp.toString(), scheduler, versionManager, followerStorage, connector.connect(masterAddress))
     }
     val leaderBuilder = { logId: Long -> Master(scheduler, leaderStorage, leaderStorage, versionManager) }
-    val replication = ReplicationStateHandler(term, followerLeaderStorage, followerBuilder, leaderBuilder)
+    val replication = ReplicationStateHandler(followerLeaderStorage, followerBuilder, leaderBuilder)
     val cluster = ConsensusStateHandler(replication, scheduler, term, aof)
 
     val codecs = listOf(
