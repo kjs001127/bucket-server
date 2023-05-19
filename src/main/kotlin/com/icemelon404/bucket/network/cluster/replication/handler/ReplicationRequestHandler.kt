@@ -1,9 +1,9 @@
 package com.icemelon404.bucket.network.cluster.replication.handler
 
-import com.icemelon404.bucket.adapter.core.ClusterAwareReplicationService
-import com.icemelon404.bucket.adapter.core.ClusterReplicationAcceptor
-import com.icemelon404.bucket.adapter.core.ClusterReplicationContext
-import com.icemelon404.bucket.adapter.core.ClusterReplicationDataSender
+import com.icemelon404.bucket.adapter.ClusterAwareReplicationService
+import com.icemelon404.bucket.adapter.ClusterReplicationAcceptor
+import com.icemelon404.bucket.adapter.ClusterReplicationContext
+import com.icemelon404.bucket.adapter.ClusterReplicationDataSender
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.network.cluster.replication.ReplicationAcceptRequest
 import com.icemelon404.bucket.network.cluster.replication.ReplicationData
