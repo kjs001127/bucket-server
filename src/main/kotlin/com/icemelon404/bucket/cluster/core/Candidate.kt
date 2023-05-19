@@ -67,7 +67,7 @@ class Candidate(
         lock.withLock {
             if (term.value < voteRequest.term) {
                 term.value = voteRequest.term
-                if (voteRequest.logIndex < logIndex)
+                if (voteRequest.log < logIndex)
                     return
                 voteRequest.vote()
                 requestVoteJob.cancel(true)

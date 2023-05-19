@@ -15,7 +15,7 @@ class VoteRequestHandler(private val listener : ConsensusService) : MessageHandl
         listener.onRequestVote(object : RequestVote {
             override val term: Long
                 get() = msg.term
-            override val logIndex: ClusterLog
+            override val log: ClusterLog
                 get() = object: ClusterLog {
                     override val termAndOffset: TermAndOffset
                         get() = TermAndOffset(msg.logId, msg.logOffset)

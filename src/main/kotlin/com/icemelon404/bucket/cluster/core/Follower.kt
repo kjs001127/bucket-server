@@ -49,7 +49,7 @@ class Follower(
     override fun onRequestVote(request: RequestVote) {
         if (request.term > term.value) {
             term.value = request.term
-            if (logIndex > request.logIndex)
+            if (logIndex > request.log)
                 return
             logger().info { "Voted incoming request" }
             refreshElectionTimeout()

@@ -94,7 +94,7 @@ class Leader(
     override fun onRequestVote(voteRequest: RequestVote) {
         if (voteRequest.term > term.value) {
             term.value = voteRequest.term
-            if (logIndex > voteRequest.logIndex)
+            if (logIndex > voteRequest.log)
                 return
             if (toFollower(voteRequest.term))
                 voteRequest.vote()
