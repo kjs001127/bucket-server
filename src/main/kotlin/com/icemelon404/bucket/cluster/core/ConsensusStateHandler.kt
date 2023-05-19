@@ -29,7 +29,7 @@ class ConsensusStateHandler (
         status.onHeartBeatDeny(responseTerm)
     }
 
-    override fun onRequestVote(voteRequest: RequestVote) = lock.withLock {
+    override fun onRequestVote(voteRequest: VoteRequest) = lock.withLock {
         status.onRequestVote(voteRequest)
     }
 

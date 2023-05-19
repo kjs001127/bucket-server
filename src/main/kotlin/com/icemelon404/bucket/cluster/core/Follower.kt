@@ -4,7 +4,7 @@ import com.icemelon404.bucket.cluster.ClusterEventListener
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.cluster.LeaderHeartBeat
 import com.icemelon404.bucket.cluster.ClusterLog
-import com.icemelon404.bucket.cluster.RequestVote
+import com.icemelon404.bucket.cluster.VoteRequest
 import com.icemelon404.bucket.common.logger
 import java.util.concurrent.*
 
@@ -46,7 +46,7 @@ class Follower(
         refreshElectionTimeout()
     }
 
-    override fun onRequestVote(request: RequestVote) {
+    override fun onRequestVote(request: VoteRequest) {
         if (request.term > term.value) {
             term.value = request.term
             if (logIndex > request.log)

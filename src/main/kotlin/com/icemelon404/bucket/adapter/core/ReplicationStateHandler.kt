@@ -13,7 +13,6 @@ import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
 
 class ReplicationStateHandler(
-
     private val storage: FollowerLeaderStorage,
     private val followerFactory: (masterAddr: InstanceAddress) -> ReplicationStatus,
     private val leaderFactory: (masterId: Long) -> ReplicationStatus

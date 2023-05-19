@@ -91,7 +91,7 @@ class Leader(
             error("Term 이 같은 두 리더가 존재할 수 없습니다")
     }
 
-    override fun onRequestVote(voteRequest: RequestVote) {
+    override fun onRequestVote(voteRequest: VoteRequest) {
         if (voteRequest.term > term.value) {
             term.value = voteRequest.term
             if (logIndex > voteRequest.log)

@@ -63,7 +63,7 @@ class Candidate(
     }
 
 
-    override fun onRequestVote(voteRequest: RequestVote) {
+    override fun onRequestVote(voteRequest: VoteRequest) {
         lock.withLock {
             if (term.value < voteRequest.term) {
                 term.value = voteRequest.term
