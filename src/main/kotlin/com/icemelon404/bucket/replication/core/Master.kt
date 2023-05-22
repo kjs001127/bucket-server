@@ -81,14 +81,6 @@ class Master(
 
 }
 
-interface ReplicatorFactory {
-    fun newReplicator(offset: Long): Replicator
-}
-
-interface Replicator : Closeable {
-    fun read(buf: ByteBuffer, timeoutMs: Long)
-}
-
 class ReplicationTask(
     private val task: Future<*>,
     val replicationId: Long

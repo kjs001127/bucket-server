@@ -81,14 +81,3 @@ class Slave(
         }
     }
 }
-
-interface ReplicationSource {
-    val address: InstanceAddress
-    fun requestReplication(info: FollowerInfo)
-}
-
-data class FollowerInfo(val instanceId: String, val replicationId: Long, val lastMaster: VersionAndOffset)
-
-interface ReplicationSourceConnector {
-    fun connect(address: InstanceAddress): ReplicationSource
-}

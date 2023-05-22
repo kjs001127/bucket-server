@@ -8,10 +8,7 @@ import java.nio.channels.FileChannel
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
 import java.util.concurrent.locks.ReentrantLock
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
 import kotlin.concurrent.withLock
-import kotlin.concurrent.write
 import kotlin.math.max
 
 class AppendOnlyFile(
