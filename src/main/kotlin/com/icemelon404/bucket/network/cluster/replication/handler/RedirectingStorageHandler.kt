@@ -1,6 +1,6 @@
 package com.icemelon404.bucket.network.cluster.replication.handler
 
-import com.icemelon404.bucket.adapter.storage.RedirectException
+import com.icemelon404.bucket.adapter.core.storage.RedirectException
 import com.icemelon404.bucket.network.cluster.replication.Redirect
 import com.icemelon404.bucket.network.common.MessageHandler
 import com.icemelon404.bucket.network.storage.message.*

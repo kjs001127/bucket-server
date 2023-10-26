@@ -1,12 +1,7 @@
 package com.icemelon404.bucket.replication.core
 
 import com.icemelon404.bucket.replication.VersionAndOffset
-import com.icemelon404.bucket.replication.OffsetAwareWritable
 import java.util.*
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
-import kotlin.concurrent.write
-
 class VersionOffsetManager {
 
     var lastVersionAndOffset: VersionAndOffset? = null

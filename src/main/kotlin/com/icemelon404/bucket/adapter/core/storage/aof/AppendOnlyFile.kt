@@ -1,4 +1,4 @@
-package com.icemelon404.bucket.adapter.aof
+package com.icemelon404.bucket.adapter.core.storage.aof
 
 import com.icemelon404.bucket.cluster.ClusterLog
 import com.icemelon404.bucket.cluster.TermAndOffset
@@ -66,7 +66,7 @@ class AppendOnlyFile(
     private fun openFile(vararg extra: StandardOpenOption) =
         FileChannel.open(Paths.get(filePath), *extra)
 
-    fun write(buf: ByteBuffer): List<TermKeyValue> = lock.withLock {
+    fun write(buf: ByteBuffer): List<TermKeyValue> = lock.withTry {
         val keyValues = codec.deserialize(buf)
         term = keyValues.maxOf { it.term }
         val limit = buf.limit()
@@ -80,7 +80,7 @@ class AppendOnlyFile(
         return keyValues
     }
 
-    fun write(data: List<TermKeyValue>): ByteBuffer = lock.withLock {
+    fun write(data: List<TermKeyValue>): ByteBuffer = lock.withTry {
         term = data.maxOf { it.term }
 
         val buf = codec.serialize(data)

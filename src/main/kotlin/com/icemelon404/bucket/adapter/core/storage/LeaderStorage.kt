@@ -1,11 +1,11 @@
-package com.icemelon404.bucket.adapter.storage
+package com.icemelon404.bucket.adapter.core.storage
 
-import com.icemelon404.bucket.adapter.aof.AofIterator
-import com.icemelon404.bucket.adapter.aof.AppendOnlyFile
-import com.icemelon404.bucket.adapter.aof.TermKeyValue
+import com.icemelon404.bucket.adapter.core.storage.aof.AofIterator
+import com.icemelon404.bucket.adapter.core.storage.aof.AppendOnlyFile
+import com.icemelon404.bucket.adapter.core.storage.aof.TermKeyValue
 import com.icemelon404.bucket.replication.OffsetReadable
-import com.icemelon404.bucket.replication.core.Replicator
-import com.icemelon404.bucket.replication.core.ReplicatorFactory
+import com.icemelon404.bucket.replication.Replicator
+import com.icemelon404.bucket.replication.ReplicatorFactory
 import com.icemelon404.bucket.storage.KeyValue
 import com.icemelon404.bucket.storage.KeyValueStorage
 import java.nio.ByteBuffer
@@ -25,7 +25,7 @@ class LeaderStorage(
     private val replicators = mutableSetOf<ReplicatorImpl>()
 
     override val offset: Long
-        get() = aof.offset
+        get() = lock.withLock { aof.offset }
 
     fun setTerm(term: Long) {
         this.term = term

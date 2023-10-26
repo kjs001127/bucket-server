@@ -1,8 +1,7 @@
-package com.icemelon404.bucket.adapter.storage
+package com.icemelon404.bucket.adapter.core.storage
 
-import com.icemelon404.bucket.adapter.aof.AppendOnlyFile
-import com.icemelon404.bucket.adapter.aof.TermKeyValueCodec
-import com.icemelon404.bucket.adapter.aof.withTry
+import com.icemelon404.bucket.adapter.core.storage.aof.AppendOnlyFile
+import com.icemelon404.bucket.adapter.core.storage.aof.withTry
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.replication.OffsetAwareWritable
 import com.icemelon404.bucket.storage.KeyValue
@@ -15,7 +14,6 @@ class FollowerStorage(
     private val file: AppendOnlyFile,
     val storage: KeyValueStorage,
 ) : OffsetAwareWritable,StorageStatus  {
-
 
     override val offset: Long
         get() = lock.withTry { file.offset }

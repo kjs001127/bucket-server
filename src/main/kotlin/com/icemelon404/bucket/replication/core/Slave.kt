@@ -1,6 +1,5 @@
 package com.icemelon404.bucket.replication.core
 
-import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.common.logger
 import com.icemelon404.bucket.replication.*
 import java.util.concurrent.*
@@ -26,15 +25,19 @@ class Slave(
     override fun start() {
         logger().info { "Slave state" }
         requestJob = executorService.scheduleWithFixedDelay({
-            if (timeout < System.currentTimeMillis())
-                requestReplication()
+            if (timeout < System.currentTimeMillis()) {
+                try {
+                    requestReplication()
+                } catch (_: Exception) {
+                }
+            }
+
         }, 0, 1000, TimeUnit.MILLISECONDS)
     }
 
     private fun requestReplication() {
         lock.withLock {
-            replicationId++
-            replicationSeqNo = 0
+            renewLocalMetadata()
             replicationSrc.requestReplication(
                 FollowerInfo(
                     instanceId,
@@ -44,6 +47,11 @@ class Slave(
             )
             logger().info { "Requesting replication id: $replicationId with id: ${currentIdAndOffset().id}}" }
         }
+    }
+
+    private fun renewLocalMetadata() {
+        replicationId++
+        replicationSeqNo = 0
     }
 
     private fun currentIdAndOffset(): VersionAndOffset =
@@ -70,14 +78,14 @@ class Slave(
         requestJob.cancel(true)
     }
 
-    override fun onAccept(accept: ReplicationAccept) {
-        lock.withLock {
-            if (accept.replicationId != replicationId)
-                return
-            refreshRequestTimeout()
-            aof.truncate(accept.dataInfo.offset)
-            versionManager.rollWith(accept.dataInfo.id, accept.dataInfo.offset)
-            logger().info { "Replication accepted with id:  ${currentIdAndOffset().id}" }
-        }
+    override fun onAccept(accept: ReplicationAccept) = lock.withLock {
+        if (accept.replicationId != replicationId)
+            return
+        refreshRequestTimeout()
+        aof.truncate(accept.dataInfo.offset)
+        versionManager.rollWith(accept.dataInfo.id, accept.dataInfo.offset)
+
+        logger().info { "Replication accepted with id:  ${currentIdAndOffset().id}" }
     }
+
 }

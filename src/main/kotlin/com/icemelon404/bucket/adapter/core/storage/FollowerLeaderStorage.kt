@@ -1,4 +1,4 @@
-package com.icemelon404.bucket.adapter.storage
+package com.icemelon404.bucket.adapter.core.storage
 
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.storage.KeyValue
@@ -19,13 +19,13 @@ class FollowerLeaderStorage(
         return status?.read(key)?: error("storage null")
     }
 
-    fun setLeader(term: Long) {
+    fun toLeader(term: Long) {
         leader.setTerm(term)
         status = leader
         leader.start()
     }
 
-    fun setFollower(leader: InstanceAddress) {
+    fun toFollower(leader: InstanceAddress) {
         follower.setLeader(leader)
         status = follower
         follower.start()

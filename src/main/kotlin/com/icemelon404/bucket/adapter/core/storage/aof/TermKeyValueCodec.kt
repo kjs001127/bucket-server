@@ -1,4 +1,4 @@
-package com.icemelon404.bucket.adapter.aof
+package com.icemelon404.bucket.adapter.core.storage.aof
 
 import com.icemelon404.bucket.common.sizeOfString
 import com.icemelon404.bucket.common.putString

@@ -3,11 +3,11 @@ package com.icemelon404.bucket
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import com.icemelon404.bucket.adapter.source.ReplicationSourceConnectorAdapter
-import com.icemelon404.bucket.adapter.core.ReplicationStateHandler
-import com.icemelon404.bucket.adapter.aof.AppendOnlyFile
-import com.icemelon404.bucket.adapter.storage.FollowerStorage
-import com.icemelon404.bucket.adapter.storage.*
+import com.icemelon404.bucket.adapter.core.ReplicationSourceConnectorAdapter
+import com.icemelon404.bucket.adapter.core.EventSynchronizer
+import com.icemelon404.bucket.adapter.core.storage.aof.AppendOnlyFile
+import com.icemelon404.bucket.adapter.core.storage.FollowerStorage
+import com.icemelon404.bucket.adapter.core.storage.*
 import com.icemelon404.bucket.cluster.core.ConsensusStateHandler
 import com.icemelon404.bucket.cluster.core.Term
 import com.icemelon404.bucket.codec.SimpleKeyValueCodec
@@ -74,7 +74,7 @@ fun main(arr: Array<String>) {
         Slave(clusterIp.toString(), scheduler, versionManager, followerStorage, connector.connect(masterAddress))
     }
     val leaderBuilder = { logId: Long -> Master(scheduler, leaderStorage, leaderStorage, versionManager) }
-    val replication = ReplicationStateHandler(followerLeaderStorage, followerBuilder, leaderBuilder)
+    val replication = EventSynchronizer(followerLeaderStorage, followerBuilder, leaderBuilder)
     val cluster = ConsensusStateHandler(replication, scheduler, term, aof)
 
     val codecs = listOf(
