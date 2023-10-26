@@ -51,7 +51,7 @@ class FollowerStorage(
        throw RedirectException(leader)
     }
 
-    override fun read(key: String): ByteArray? {
+    override fun read(key: String): ByteArray? = lock.withTry {
         return storage.read(key)
     }
 
