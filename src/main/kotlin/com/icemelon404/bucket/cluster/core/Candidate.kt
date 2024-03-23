@@ -26,10 +26,9 @@ class Candidate(
         startPeriodicVoteRequest()
     }
 
-    private fun startPeriodicVoteRequest() {
-        val latch = CountDownLatch(1)
+    private fun startPeriodicVoteRequest() = lock.withLock {
+
         requestVoteJob = executor.scheduleWithFixedDelay({
-            latch.await()
             lock.withLock {
                 if (requestVoteJob.isCancelled)
                     return@scheduleWithFixedDelay
@@ -45,7 +44,6 @@ class Candidate(
             }
 
         }, 0, 500 + ThreadLocalRandom.current().nextLong(500), TimeUnit.MILLISECONDS)
-        latch.countDown()
     }
 
     override fun onVoteReceived(voteTerm: Long) {

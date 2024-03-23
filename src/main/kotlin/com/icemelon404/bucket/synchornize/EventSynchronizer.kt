@@ -1,8 +1,7 @@
-package com.icemelon404.bucket.adapter.core
+package com.icemelon404.bucket.synchornize
 
-import com.icemelon404.bucket.adapter.*
-import com.icemelon404.bucket.adapter.core.storage.aof.withTry
-import com.icemelon404.bucket.adapter.core.storage.FollowerLeaderStorage
+import com.icemelon404.bucket.adaptable.aof.withTry
+import com.icemelon404.bucket.adaptable.storage.FollowerLeaderStorage
 import com.icemelon404.bucket.cluster.ClusterEventListener
 import com.icemelon404.bucket.cluster.core.Term
 import com.icemelon404.bucket.common.InstanceAddress
@@ -19,7 +18,7 @@ class EventSynchronizer(
     private val storage: FollowerLeaderStorage,
     private val newFollower: (masterAddr: InstanceAddress) -> ReplicationStatus,
     private val newLeader: (masterId: Long) -> ReplicationStatus,
-) : ClusterEventListener, ClusterAwareReplicationService, KeyValueStorage {
+) : ClusterEventListener, ReplicationService, KeyValueStorage {
 
     private val lock = ReentrantLock()
     private val storageLock = ReentrantLock()
@@ -66,26 +65,20 @@ class EventSynchronizer(
             this.status.close()
     }
 
-    override fun onData(data: ClusterDataReplication) = executor.execute {
-        if (this.term.value != data.term)
-            return@execute
-        status.onData(data.data)
+    override fun onData(replication: DataReplication) = executor.execute {
+        status.onData(replication)
     }
 
 
-    override fun onRequest(context: ClusterReplicationContext, acceptor: ClusterReplicationAcceptor) =
+    override fun onRequest(request: ReplicationContext, accept: ReplicationAcceptor) =
         executor.execute {
-            if (this.term.value != context.term)
-                return@execute
-            status.onRequest(context.context, ReplicationAcceptorAdapter(this.term.value, acceptor))
+            status.onRequest(request, accept)
         }
 
 
-    override fun onAccept(accept: ClusterReplicationAccept) =
+    override fun onAccept(accept: ReplicationAccept) =
         executor.execute {
-            if (this.term.value != accept.term)
-                return@execute
-            status.onAccept(accept.data)
+            status.onAccept(accept)
         }
 
     override fun write(keyValue: KeyValue) = storageLock.withTry {
@@ -94,29 +87,11 @@ class EventSynchronizer(
 
     override fun read(key: String) = storageLock.withTry { storage.read(key) }
 
-    override fun clear() = lock.withLock {
+    override fun clear() = lock.withTry {
         storage.clear()
     }
 }
 
 class EmptyStatus() : ReplicationStatus {
 
-}
-
-class ReplicationAcceptorAdapter(
-    val term: Long,
-    private val delegate: ClusterReplicationAcceptor
-) : ReplicationAcceptor {
-    override fun accept(masterInfo: VersionAndOffset): ReplicationDataSender {
-        return ReplicationDataSenderAdaptor(term, delegate.accept(term, masterInfo))
-    }
-}
-
-class ReplicationDataSenderAdaptor(
-    private val term: Long,
-    private val delegate: ClusterReplicationDataSender
-) : ReplicationDataSender {
-    override fun sendData(data: ByteArray) {
-        delegate.sendData(term, data)
-    }
 }

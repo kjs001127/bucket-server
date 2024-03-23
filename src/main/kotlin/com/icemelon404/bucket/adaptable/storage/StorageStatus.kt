@@ -1,4 +1,4 @@
-package com.icemelon404.bucket.adapter.core.storage
+package com.icemelon404.bucket.adaptable.storage
 
 import com.icemelon404.bucket.storage.KeyValueStorage
 

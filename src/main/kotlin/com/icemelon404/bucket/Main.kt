@@ -3,11 +3,10 @@ package com.icemelon404.bucket
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory
 import com.fasterxml.jackson.module.kotlin.KotlinModule
-import com.icemelon404.bucket.adapter.core.ReplicationSourceConnectorAdapter
-import com.icemelon404.bucket.adapter.core.EventSynchronizer
-import com.icemelon404.bucket.adapter.core.storage.aof.AppendOnlyFile
-import com.icemelon404.bucket.adapter.core.storage.FollowerStorage
-import com.icemelon404.bucket.adapter.core.storage.*
+import com.icemelon404.bucket.adaptable.storage.FollowerLeaderStorage
+import com.icemelon404.bucket.adaptable.aof.AppendOnlyFile
+import com.icemelon404.bucket.adaptable.storage.FollowerStorage
+import com.icemelon404.bucket.adaptable.storage.LeaderStorage
 import com.icemelon404.bucket.cluster.core.ConsensusStateHandler
 import com.icemelon404.bucket.cluster.core.Term
 import com.icemelon404.bucket.codec.SimpleKeyValueCodec
@@ -34,6 +33,7 @@ import com.icemelon404.bucket.replication.core.Master
 import com.icemelon404.bucket.replication.core.Slave
 import com.icemelon404.bucket.replication.core.VersionOffsetManager
 import com.icemelon404.bucket.storage.MemoryStorage
+import com.icemelon404.bucket.synchornize.EventSynchronizer
 import java.io.File
 import java.nio.file.Paths
 import java.util.concurrent.Executors
@@ -67,8 +67,7 @@ fun main(arr: Array<String>) {
     val followerLeaderStorage = FollowerLeaderStorage(leaderStorage, followerStorage)
 
     val term = Term(0)
-    val realConnector = ClusterNodeMatchingConnector(mutableSetOf())
-    val connector = ReplicationSourceConnectorAdapter(realConnector, term)
+    val connector = ClusterNodeMatchingConnector(mutableSetOf())
     val versionManager = VersionOffsetManager()
     val followerBuilder = { masterAddress: InstanceAddress ->
         Slave(clusterIp.toString(), scheduler, versionManager, followerStorage, connector.connect(masterAddress))
@@ -123,7 +122,7 @@ fun main(arr: Array<String>) {
 
     val storageServer = ClusterServer(storageCodec, storageHandler, storageIp.port)
     storageServer.start()
-    nodes.forEach { realConnector.addInstance(it); it.connect() }
+    nodes.forEach { connector.addInstance(it); it.connect() }
     cluster.start(nodes.map{ PeerRequester(it, clusterIp) }.toSet())
     server.start()
 }

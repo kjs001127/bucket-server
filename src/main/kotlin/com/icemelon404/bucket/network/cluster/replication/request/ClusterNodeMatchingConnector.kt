@@ -1,15 +1,15 @@
 package com.icemelon404.bucket.network.cluster.replication.request
 
-import com.icemelon404.bucket.adapter.ClusterAwareReplicationSource
-import com.icemelon404.bucket.adapter.ClusterAwareReplicationSourceConnector
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.network.cluster.connection.ClusterNode
+import com.icemelon404.bucket.replication.ReplicationSource
+import com.icemelon404.bucket.replication.ReplicationSourceConnector
 
 class ClusterNodeMatchingConnector(
     private val nodes: MutableCollection<ClusterNode>
-) : ClusterAwareReplicationSourceConnector {
+) : ReplicationSourceConnector {
 
-    override fun connect(address: InstanceAddress): ClusterAwareReplicationSource =
+    override fun connect(address: InstanceAddress): ReplicationSource =
         nodes
             .firstOrNull { it.address == address }
             ?.let { ReplicationRequester(it) }

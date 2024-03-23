@@ -15,14 +15,12 @@ class ReplicationAcceptCodec(packetId: Int) :
 
     override fun resolve(packet: Packet): ReplicationAcceptRequest {
         with(ByteBuffer.wrap(packet.body)) {
-            val term = long
             val replicationId = long
             val masterId = string
             val masterOffset = long
             val masterIp = string
             val masterPort = int
             return ReplicationAcceptRequest(
-                term,
                 replicationId,
                 InstanceAddress(masterIp, masterPort),
                 VersionAndOffset(masterId, masterOffset)
@@ -37,7 +35,6 @@ class ReplicationAcceptCodec(packetId: Int) :
                     Long.SIZE_BYTES * 3 +
                     Int.SIZE_BYTES
         ).apply {
-            putLong(msg.term)
             putLong(msg.replicationId)
             putString(msg.masterInfo.id)
             putLong(msg.masterInfo.offset)

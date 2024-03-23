@@ -36,10 +36,8 @@ class Leader(
     }
 
     private fun runHeartBeat(term: Long) {
-        val heartBeatLatch = CountDownLatch(1)
         heartBeatJob = cluster.map {
             executor.scheduleWithFixedDelay({
-                heartBeatLatch.await()
                 try {
                     it.heartBeat(term)
                     health[it.address] = Health.ONLINE
@@ -49,22 +47,20 @@ class Leader(
 
             }, 0, 200, TimeUnit.MILLISECONDS)
         }
-        heartBeatLatch.countDown()
 
-        val watchLatch = CountDownLatch(1)
-        watchJob = executor.scheduleWithFixedDelay({
-            watchLatch.await()
-            if (isMajorityOffline()) {
-                logger().warn { "Majority of node offline" }
-                cancelHeartBeat()
-                lock.withLock {
-                    if (!watchJob.isCancelled)
-                        transition.toFollower()
+        lock.withLock {
+            watchJob = this.executor.scheduleWithFixedDelay({
+                if (isMajorityOffline()) {
+                    logger().warn { "Majority of node offline" }
+                    cancelHeartBeat()
+                    lock.withLock {
+                        if (!watchJob.isCancelled)
+                            transition.toFollower()
+                    }
+                    watchJob.cancel(true)
                 }
-                watchJob.cancel(true)
-            }
-        }, 0, 100, TimeUnit.MILLISECONDS)
-        watchLatch.countDown()
+            }, 0, 100, TimeUnit.MILLISECONDS)
+        }
     }
 
     private fun isMajorityOffline() = health.count { (_, status) -> status == Health.OFFLINE } >= majority

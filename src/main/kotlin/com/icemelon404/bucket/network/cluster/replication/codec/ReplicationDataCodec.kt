@@ -12,18 +12,16 @@ class ReplicationDataCodec(
 
     override fun resolve(packet: Packet): ReplicationData {
         with(ByteBuffer.wrap(packet.body)) {
-            val term = long
             val replicationId = long
             val seqNo = long
             val data = ByteArray(remaining()).also { get(it) }
-            return ReplicationData(term, replicationId, seqNo, data)
+            return ReplicationData(replicationId, seqNo, data)
         }
     }
 
 
     override fun serialize(msg: ReplicationData): ByteArray {
         return ByteBuffer.allocate(msg.data.size + Long.SIZE_BYTES*3).apply {
-            putLong(msg.term)
             putLong(msg.replicationId)
             putLong(msg.seqNo)
             put(msg.data)

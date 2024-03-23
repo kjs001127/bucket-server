@@ -28,7 +28,8 @@ class Slave(
             if (timeout < System.currentTimeMillis()) {
                 try {
                     requestReplication()
-                } catch (_: Exception) {
+                } catch (e: Exception) {
+                    logger().warn { "request replication failed. cause: $e"}
                 }
             }
 
@@ -89,3 +90,5 @@ class Slave(
     }
 
 }
+
+data class ReplicationSession(val replicationId: Long, var seqNo: Long)

@@ -1,7 +1,7 @@
-package com.icemelon404.bucket.adapter.core.storage
+package com.icemelon404.bucket.adaptable.storage
 
-import com.icemelon404.bucket.adapter.core.storage.aof.AppendOnlyFile
-import com.icemelon404.bucket.adapter.core.storage.aof.withTry
+import com.icemelon404.bucket.adaptable.aof.AppendOnlyFile
+import com.icemelon404.bucket.adaptable.aof.withTry
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.replication.OffsetAwareWritable
 import com.icemelon404.bucket.storage.KeyValue
@@ -13,7 +13,7 @@ import kotlin.concurrent.withLock
 class FollowerStorage(
     private val file: AppendOnlyFile,
     val storage: KeyValueStorage,
-) : OffsetAwareWritable,StorageStatus  {
+) : OffsetAwareWritable, StorageStatus {
 
     override val offset: Long
         get() = lock.withTry { file.offset }

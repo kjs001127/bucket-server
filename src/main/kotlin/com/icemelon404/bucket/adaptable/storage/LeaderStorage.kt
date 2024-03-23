@@ -1,8 +1,8 @@
-package com.icemelon404.bucket.adapter.core.storage
+package com.icemelon404.bucket.adaptable.storage
 
-import com.icemelon404.bucket.adapter.core.storage.aof.AofIterator
-import com.icemelon404.bucket.adapter.core.storage.aof.AppendOnlyFile
-import com.icemelon404.bucket.adapter.core.storage.aof.TermKeyValue
+import com.icemelon404.bucket.adaptable.aof.AofIterator
+import com.icemelon404.bucket.adaptable.aof.AppendOnlyFile
+import com.icemelon404.bucket.adaptable.aof.TermKeyValue
 import com.icemelon404.bucket.replication.OffsetReadable
 import com.icemelon404.bucket.replication.Replicator
 import com.icemelon404.bucket.replication.ReplicatorFactory
@@ -35,6 +35,9 @@ class LeaderStorage(
     }
 
     override fun close() {
+        replicators.toMutableList().forEach {
+            it.close()
+        }
     }
 
     override fun write(keyValue: KeyValue) = lock.withLock {
