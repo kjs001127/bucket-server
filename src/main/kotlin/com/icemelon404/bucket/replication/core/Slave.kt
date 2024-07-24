@@ -1,6 +1,6 @@
 package com.icemelon404.bucket.replication.core
 
-import com.icemelon404.bucket.common.logger
+import com.icemelon404.bucket.util.logger
 import com.icemelon404.bucket.replication.*
 import java.util.concurrent.*
 import java.util.concurrent.locks.ReentrantLock
@@ -9,12 +9,12 @@ import kotlin.concurrent.withLock
 class Slave(
     private val instanceId: String,
     private val executorService: ScheduledExecutorService,
-    private val versionManager: VersionOffsetManager,
+    private val versionOffsetRecorder: VersionOffsetRecorder,
     private val aof: OffsetAwareWritable,
     private val replicationSrc: ReplicationSource
 ) : ReplicationStatus {
 
-    private lateinit var requestJob: ScheduledFuture<*>
+    private lateinit var scheduler: ScheduledFuture<*>
     private val lock = ReentrantLock()
     private var replicationId: Long = 0
     private var replicationSeqNo: Long = 0
@@ -24,7 +24,7 @@ class Slave(
 
     override fun start() {
         logger().info { "Slave state" }
-        requestJob = executorService.scheduleWithFixedDelay({
+        scheduler = executorService.scheduleWithFixedDelay({
             if (timeout < System.currentTimeMillis()) {
                 try {
                     requestReplication()
@@ -56,10 +56,10 @@ class Slave(
     }
 
     private fun currentIdAndOffset(): VersionAndOffset =
-        VersionAndOffset(this.versionManager.currentVersion, aof.offset)
+        VersionAndOffset(this.versionOffsetRecorder.currentVersion, aof.offset)
 
     private fun refreshRequestTimeout() {
-        timeout = System.currentTimeMillis() + 3000
+        timeout = System.currentTimeMillis() + 10000
     }
 
     override fun onData(replication: DataReplication) = lock.withLock {
@@ -76,19 +76,21 @@ class Slave(
     }
 
     override fun close() {
-        requestJob.cancel(true)
+        scheduler.cancel(true)
     }
 
-    override fun onAccept(accept: ReplicationAccept) = lock.withLock {
+    override fun onAccept(accept: ReplicationAccept, ack: ReplicationAckSender) = lock.withLock {
         if (accept.replicationId != replicationId)
             return
+
         refreshRequestTimeout()
         aof.truncate(accept.dataInfo.offset)
-        versionManager.rollWith(accept.dataInfo.id, accept.dataInfo.offset)
+        versionOffsetRecorder.rollWith(accept.dataInfo.id, accept.dataInfo.offset)
+
+        ack.ack(replicationId, instanceId)
 
         logger().info { "Replication accepted with id:  ${currentIdAndOffset().id}" }
     }
 
 }
 
-data class ReplicationSession(val replicationId: Long, var seqNo: Long)

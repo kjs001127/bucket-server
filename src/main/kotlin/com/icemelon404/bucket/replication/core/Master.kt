@@ -1,9 +1,7 @@
 package com.icemelon404.bucket.replication.core
 
-import com.icemelon404.bucket.common.logger
+import com.icemelon404.bucket.util.logger
 import com.icemelon404.bucket.replication.*
-import io.netty.buffer.ByteBuf
-import java.io.Closeable
 import java.nio.ByteBuffer
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Future
@@ -13,7 +11,7 @@ class Master(
     private val scheduler: ExecutorService,
     private val replicatorFactory: ReplicatorFactory,
     private val offsetReadable: OffsetReadable,
-    private val versionOffsetManager: VersionOffsetManager
+    private val versionOffsetManager: VersionOffsetRecorder
 ) : ReplicationStatus {
 
     private val replicationTask = mutableMapOf<String, ReplicationTask>()
@@ -23,23 +21,19 @@ class Master(
         logger().info { "Master state with id: ${versionOffsetManager.currentVersion}, last-id: ${versionOffsetManager.lastVersionAndOffset}" }
     }
 
-    override fun onRequest(request: ReplicationContext, accept: ReplicationAcceptor) {
-        if (!shouldIgnore(request))
-            startNewReplication(request, accept)
+    override fun onRequest(request: ReplicationContext, acceptor: ReplicationAcceptor) {
+        if (shouldAcceptNewReplication(request)) {
+            val startOffset = replicationStartOffset(request.lastMaster)
+            createNewReplication(request, startOffset)
+            acceptor.accept(VersionAndOffset(versionOffsetManager.currentVersion, startOffset))
+        }
     }
 
-    private fun startNewReplication(request: ReplicationContext, acceptor: ReplicationAcceptor) {
+    private fun createNewReplication(request: ReplicationContext, offset: Long) {
         logger().info { "Starting new replication id: ${request.replicationId} to ${request.instanceId}" }
         replicationTask[request.instanceId]?.cancel()
-        replicationTask[request.instanceId] = ReplicationTask(newReplicationTask(request, acceptor), request.replicationId)
+        replicationTask[request.instanceId] = ReplicationTask(null, request.replicationId, offset)
     }
-
-    private fun newReplicationTask(request: ReplicationContext, acceptor: ReplicationAcceptor) =
-        scheduler.submit {
-            val startOffset = replicationStartOffset(request.lastMaster)
-            val stream = acceptor.accept(VersionAndOffset(versionOffsetManager.currentVersion, startOffset))
-            sendReplicationData(stream, startOffset, 100, 1024 * 32)
-        }
 
     private fun replicationStartOffset(replicaIdOffset: VersionAndOffset): Long {
         return setOf(currentIdAndOffset(), versionOffsetManager.lastVersionAndOffset)
@@ -60,18 +54,40 @@ class Master(
     ) {
         val replicator = replicatorFactory.newReplicator(startOffset)
         val buf = ByteBuffer.allocate(maxSize)
+        var seqNo = 0L
         while (!Thread.currentThread().isInterrupted) {
             replicator.read(buf, timeout)
             buf.flip()
-            request.sendData(buf.slice().array().clone())
+
+            val data = ByteArray(buf.remaining())
+            buf.get(data, buf.position(), buf.limit())
+            request.sendData(seqNo, data)
+
             buf.clear()
+            seqNo++
         }
     }
 
-    private fun shouldIgnore(request: ReplicationContext) =
+    private fun shouldAcceptNewReplication(request: ReplicationContext) =
         replicationTask[request.instanceId]?.let {
-            it.replicationId >= request.replicationId
-        } ?: false
+            it.replicationId < request.replicationId
+        } ?: true
+
+    private fun shouldAcceptAck(ack: Ack) =
+        replicationTask[ack.instanceId]?.let {
+            it.replicationId == ack.replicationId
+        }?:false
+
+    override fun onAck(ack: Ack, dataSender: ReplicationDataSender) {
+        if (shouldAcceptAck(ack)) {
+            logger().info { "replication ack received from ${ack.instanceId}, ${ack.replicationId}" }
+            replicationTask[ack.instanceId]?.let {
+                it.task = this.scheduler.submit{
+                    sendReplicationData(dataSender, it.startOffset, 1000, 1024*1024)
+                }
+            }
+        }
+    }
 
 
     override fun close() {
@@ -82,10 +98,12 @@ class Master(
 }
 
 class ReplicationTask(
-    private val task: Future<*>,
-    val replicationId: Long
+    var task: Future<*>?,
+    val replicationId: Long,
+    val startOffset: Long
 ) {
+
     fun cancel() {
-        task.cancel(true)
+        task?.cancel(true)
     }
 }

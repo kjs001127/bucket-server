@@ -2,7 +2,8 @@ package com.icemelon404.bucket.cluster.core
 
 import com.icemelon404.bucket.cluster.*
 import com.icemelon404.bucket.common.InstanceAddress
-import com.icemelon404.bucket.common.logger
+import com.icemelon404.bucket.core.aof.withTry
+import com.icemelon404.bucket.util.logger
 import java.util.concurrent.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -10,16 +11,17 @@ import kotlin.concurrent.withLock
 class Leader(
     private val term: Term,
     private val cluster: Set<Peer>,
-    private val transition: ConsensusStateHandler,
+    private val transition: ElectionStateHandler,
     private val executor: ScheduledExecutorService,
-    private val clusterEventListener: ClusterEventListener,
+    private val electionEventListener: ElectionEventListener,
     private val logIndex: ClusterLog
-) : ConsensusState {
+) : ElectionState {
 
     private val health = ConcurrentHashMap<InstanceAddress, Health>()
 
     @Volatile
     private lateinit var heartBeatJob: List<Future<*>>
+    private var closed: Boolean = false
 
     @Volatile
     private lateinit var watchJob: Future<*>
@@ -30,7 +32,7 @@ class Leader(
 
     override fun onStart() {
         logger().info { "Transition to leader state" }
-        clusterEventListener.onElectedAsLeader(term.value)
+        electionEventListener.onElectedAsLeader(term.value)
         cluster.forEach { health[it.address] = Health.PENDING }
         runHeartBeat(term.value)
     }
@@ -48,19 +50,20 @@ class Leader(
             }, 0, 200, TimeUnit.MILLISECONDS)
         }
 
-        lock.withLock {
-            watchJob = this.executor.scheduleWithFixedDelay({
-                if (isMajorityOffline()) {
-                    logger().warn { "Majority of node offline" }
-                    cancelHeartBeat()
-                    lock.withLock {
-                        if (!watchJob.isCancelled)
-                            transition.toFollower()
-                    }
+        val latch = CountDownLatch(1)
+        watchJob = this.executor.scheduleWithFixedDelay({
+            latch.await()
+
+            if (isMajorityOffline()) {
+                logger().warn { "Majority of node offline" }
+                cancelHeartBeat()
+                if (!watchJob.isCancelled)
                     watchJob.cancel(true)
-                }
-            }, 0, 100, TimeUnit.MILLISECONDS)
-        }
+                toFollower(term)
+            }
+        }, 0, 100, TimeUnit.MILLISECONDS)
+        latch.countDown()
+
     }
 
     private fun isMajorityOffline() = health.count { (_, status) -> status == Health.OFFLINE } >= majority
@@ -102,14 +105,13 @@ class Leader(
             toFollower(responseTerm)
     }
 
-    private fun toFollower(responseTerm: Long): Boolean {
-        if (!lock.tryLock())
+    private fun toFollower(responseTerm: Long): Boolean = lock.withTry {
+        if (closed) {
             return false
-        logger().warn { "Leader with higher term: $responseTerm detected" }
+        }
         term.value = responseTerm
         cancelBackgroundJobs()
         transition.toFollower()
-        lock.unlock()
         return true
     }
 }

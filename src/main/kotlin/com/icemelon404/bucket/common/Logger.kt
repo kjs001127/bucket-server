@@ -1,7 +1,6 @@
-package com.icemelon404.bucket.common
+package com.icemelon404.bucket.util
 
 import mu.KotlinLogging
-import org.slf4j.LoggerFactory
 
 
 inline fun <reified T> T.logger() =

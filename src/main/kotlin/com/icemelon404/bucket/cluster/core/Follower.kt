@@ -1,20 +1,20 @@
 package com.icemelon404.bucket.cluster.core
 
-import com.icemelon404.bucket.cluster.ClusterEventListener
+import com.icemelon404.bucket.cluster.ElectionEventListener
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.cluster.LeaderHeartBeat
 import com.icemelon404.bucket.cluster.ClusterLog
 import com.icemelon404.bucket.cluster.VoteRequest
-import com.icemelon404.bucket.common.logger
+import com.icemelon404.bucket.util.logger
 import java.util.concurrent.*
 
 class Follower(
     private val term: Term,
-    private val clusterEventListener: ClusterEventListener,
-    private val transition: ConsensusStateHandler,
+    private val electionEventListener: ElectionEventListener,
+    private val transition: ElectionStateHandler,
     private val executor: ScheduledExecutorService,
     private val logIndex: ClusterLog
-) : ConsensusState {
+) : ElectionState {
 
     @Volatile
     private var electionTimeout = System.currentTimeMillis()
@@ -24,7 +24,7 @@ class Follower(
 
     override fun onStart() {
         logger().info { "Transition to follower state" }
-        clusterEventListener.onVotePending()
+        electionEventListener.onVotePending()
         refreshElectionTimeout()
         checkElectionTimeout()
     }
@@ -35,15 +35,17 @@ class Follower(
             claim.deny(term.value)
             return
         }
+
         term.value = claim.term
+        refreshElectionTimeout()
+
         claim.instanceId.let {
             if (leaderAddress != it) {
                 logger().info { "Leader changed to $it" }
                 leaderAddress = it
-                clusterEventListener.onLeaderFound(term.value, it)
+                electionEventListener.onLeaderFound(term.value, it)
             }
         }
-        refreshElectionTimeout()
     }
 
     override fun onRequestVote(request: VoteRequest) {
@@ -53,7 +55,7 @@ class Follower(
                 return
             logger().info { "Voted incoming request" }
             refreshElectionTimeout()
-            clusterEventListener.onVotePending()
+            electionEventListener.onVotePending()
             request.vote()
         }
     }

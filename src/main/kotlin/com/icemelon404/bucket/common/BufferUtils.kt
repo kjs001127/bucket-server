@@ -10,7 +10,7 @@ fun ByteBuffer.putString(str: String) =
         putInt(it.size)
         put(it)
     }
-fun sizeOfString(str: String) = str.toByteArray().size + 4
+fun sizeOfString(str: String) = str.toByteArray().size + Integer.BYTES
 
 fun Boolean.toByte() =
     if (this) 1.toByte()

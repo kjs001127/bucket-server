@@ -1,7 +1,7 @@
 package com.icemelon404.bucket.cluster.core
 
 import com.icemelon404.bucket.cluster.*
-import com.icemelon404.bucket.common.logger
+import com.icemelon404.bucket.util.logger
 import java.util.concurrent.*
 import java.util.concurrent.locks.ReentrantLock
 import kotlin.concurrent.withLock
@@ -10,10 +10,10 @@ class Candidate(
     private val term: Term,
     private val logIndex: ClusterLog,
     private val peers: Set<Peer>,
-    private val transition: ConsensusStateHandler,
-    private val clusterEventListener: ClusterEventListener,
+    private val transition: ElectionStateHandler,
+    private val electionEventListener: ElectionEventListener,
     private val executor: ScheduledExecutorService
-) : ConsensusState {
+) : ElectionState {
     private var receivedVoteCnt: Int = 0
     private lateinit var requestVoteJob: Future<*>
     private val majority: Int
@@ -22,12 +22,11 @@ class Candidate(
 
     override fun onStart() {
         logger().info { "Transition to candidate state" }
-        clusterEventListener.onVotePending()
+        electionEventListener.onVotePending()
         startPeriodicVoteRequest()
     }
 
     private fun startPeriodicVoteRequest() = lock.withLock {
-
         requestVoteJob = executor.scheduleWithFixedDelay({
             lock.withLock {
                 if (requestVoteJob.isCancelled)
