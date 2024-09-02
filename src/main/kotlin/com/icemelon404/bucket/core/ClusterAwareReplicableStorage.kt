@@ -1,6 +1,6 @@
 package com.icemelon404.bucket.synchornize
 
-import com.icemelon404.bucket.core.aof.withTry
+import com.icemelon404.bucket.common.withTry
 import com.icemelon404.bucket.core.FollowerLeaderStorage
 import com.icemelon404.bucket.cluster.ElectionEventListener
 import com.icemelon404.bucket.common.InstanceAddress

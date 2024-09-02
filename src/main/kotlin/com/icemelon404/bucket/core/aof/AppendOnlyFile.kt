@@ -2,6 +2,7 @@ package com.icemelon404.bucket.core.aof
 
 import com.icemelon404.bucket.cluster.ClusterLog
 import com.icemelon404.bucket.cluster.TermAndOffset
+import io.netty.buffer.UnpooledDirectByteBuf
 import java.lang.Integer.min
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
@@ -125,22 +126,3 @@ class AofIterator(
     }
 }
 
-inline fun <T> ReentrantLock.withTry(f: () -> T): T {
-    this.tryLock()
-    try {
-        return f()
-    } finally {
-        this.unlock()
-    }
-}
-
-inline fun <T> ReadLock.withTry(f: () -> T): T {
-    this.tryLock()
-    try {
-        return f()
-    } finally {
-        this.unlock()
-    }
-}
-
-interface ClosableIterator<T> : Iterator<T>, AutoCloseable

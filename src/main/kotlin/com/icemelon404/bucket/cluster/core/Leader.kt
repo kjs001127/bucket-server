@@ -2,11 +2,10 @@ package com.icemelon404.bucket.cluster.core
 
 import com.icemelon404.bucket.cluster.*
 import com.icemelon404.bucket.common.InstanceAddress
-import com.icemelon404.bucket.core.aof.withTry
+import com.icemelon404.bucket.common.withTry
 import com.icemelon404.bucket.util.logger
 import java.util.concurrent.*
 import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 class Leader(
     private val term: Term,
