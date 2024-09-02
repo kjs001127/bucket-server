@@ -11,7 +11,7 @@ class Master(
     private val scheduler: ExecutorService,
     private val replicatorFactory: ReplicatorFactory,
     private val offsetReadable: OffsetReadable,
-    private val versionOffsetManager: VersionOffsetRecorder
+    private val versionOffsetManager: Recorder
 ) : ReplicationStatus {
 
     private val replicationTask = mutableMapOf<String, ReplicationTask>()

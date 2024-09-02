@@ -3,7 +3,7 @@ package com.icemelon404.bucket.core.aof
 import com.icemelon404.bucket.common.sizeOfString
 import com.icemelon404.bucket.common.putString
 import com.icemelon404.bucket.common.string
-import com.icemelon404.bucket.storage.KeyValue
+import com.icemelon404.bucket.core.KeyValue
 import java.nio.ByteBuffer
 
 data class TermKeyValue(val term: Long, val keyValue: KeyValue)

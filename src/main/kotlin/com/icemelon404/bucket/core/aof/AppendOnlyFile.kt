@@ -28,12 +28,12 @@ class AppendOnlyFile(
             return file0
         }
     val offset: Long
-        get() =  file.position()
+        get() = file.position()
     override val termAndOffset: TermAndOffset
-        get() =  TermAndOffset(term, offset)
+        get() = TermAndOffset(term, offset)
 
 
-  fun truncate(offset: Long) {
+    fun truncate(offset: Long) {
         file.truncate(offset)
         file.force(true)
     }
@@ -63,7 +63,7 @@ class AppendOnlyFile(
     private fun openFile(vararg extra: StandardOpenOption) =
         FileChannel.open(Paths.get(filePath), *extra)
 
-    fun write(buf: ByteBuffer): List<TermKeyValue>  {
+    fun write(buf: ByteBuffer): List<TermKeyValue> {
         val keyValues = codec.deserialize(buf)
         if (keyValues.isEmpty()) {
             return emptyList()
@@ -111,7 +111,7 @@ class AofIterator(
             return
         }
 
-        buffer.limit(min(buffer.capacity(), remaining))
+        buffer.limit(min(buffer.limit(), buffer.position() + remaining))
         channel.read(buffer)
     }
 
@@ -125,7 +125,7 @@ class AofIterator(
     }
 }
 
-inline fun <T> ReentrantLock.withTry(f: ()->T): T {
+inline fun <T> ReentrantLock.withTry(f: () -> T): T {
     this.tryLock()
     try {
         return f()
@@ -134,7 +134,7 @@ inline fun <T> ReentrantLock.withTry(f: ()->T): T {
     }
 }
 
-inline fun <T> ReadLock.withTry(f: ()->T): T {
+inline fun <T> ReadLock.withTry(f: () -> T): T {
     this.tryLock()
     try {
         return f()
@@ -143,4 +143,4 @@ inline fun <T> ReadLock.withTry(f: ()->T): T {
     }
 }
 
-interface ClosableIterator<T>: Iterator<T>, AutoCloseable
+interface ClosableIterator<T> : Iterator<T>, AutoCloseable

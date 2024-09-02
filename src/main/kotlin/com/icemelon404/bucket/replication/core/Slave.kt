@@ -9,7 +9,7 @@ import kotlin.concurrent.withLock
 class Slave(
     private val instanceId: String,
     private val executorService: ScheduledExecutorService,
-    private val versionOffsetRecorder: VersionOffsetRecorder,
+    private val recorder: Recorder,
     private val aof: OffsetAwareWritable,
     private val replicationSrc: ReplicationSource
 ) : ReplicationStatus {
@@ -56,7 +56,7 @@ class Slave(
     }
 
     private fun currentIdAndOffset(): VersionAndOffset =
-        VersionAndOffset(this.versionOffsetRecorder.currentVersion, aof.offset)
+        VersionAndOffset(this.recorder.currentVersion, aof.offset)
 
     private fun refreshRequestTimeout() {
         timeout = System.currentTimeMillis() + 10000
@@ -85,7 +85,7 @@ class Slave(
 
         refreshRequestTimeout()
         aof.truncate(accept.dataInfo.offset)
-        versionOffsetRecorder.rollWith(accept.dataInfo.id, accept.dataInfo.offset)
+        recorder.rollWith(accept.dataInfo.id, accept.dataInfo.offset)
 
         ack.ack(replicationId, instanceId)
 

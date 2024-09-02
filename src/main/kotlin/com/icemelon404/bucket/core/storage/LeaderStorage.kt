@@ -6,8 +6,8 @@ import com.icemelon404.bucket.core.aof.TermKeyValue
 import com.icemelon404.bucket.replication.OffsetReadable
 import com.icemelon404.bucket.replication.Replicator
 import com.icemelon404.bucket.replication.ReplicatorFactory
-import com.icemelon404.bucket.storage.KeyValue
-import com.icemelon404.bucket.storage.KeyValueStorage
+import com.icemelon404.bucket.core.KeyValue
+import com.icemelon404.bucket.core.KeyValueStorage
 import java.nio.ByteBuffer
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit

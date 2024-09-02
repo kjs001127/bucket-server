@@ -4,13 +4,11 @@ import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.core.storage.FollowerStorage
 import com.icemelon404.bucket.core.storage.LeaderStorage
 import com.icemelon404.bucket.core.storage.StorageStatus
-import com.icemelon404.bucket.storage.KeyValue
-import com.icemelon404.bucket.storage.KeyValueStorage
 
 class FollowerLeaderStorage(
     private val leader: LeaderStorage,
     private val follower: FollowerStorage,
-):  KeyValueStorage{
+): KeyValueStorage {
 
     @Volatile
     private var status: StorageStatus? = null

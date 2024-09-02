@@ -1,4 +1,4 @@
-package com.icemelon404.bucket.storage
+package com.icemelon404.bucket.core
 
 data class KeyValue(val key: String, val value: ByteArray?) {
     override fun equals(other: Any?): Boolean {

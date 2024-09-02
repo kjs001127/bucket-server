@@ -1,5 +1,7 @@
-package com.icemelon404.bucket.storage
+package com.icemelon404.bucket.core.storage
 
+import com.icemelon404.bucket.core.KeyValue
+import com.icemelon404.bucket.core.KeyValueStorage
 import java.util.concurrent.ConcurrentHashMap
 
 class MemoryStorage: KeyValueStorage {

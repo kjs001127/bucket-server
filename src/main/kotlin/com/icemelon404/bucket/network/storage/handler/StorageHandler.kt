@@ -5,7 +5,7 @@ import com.icemelon404.bucket.network.storage.message.Ack
 import com.icemelon404.bucket.network.storage.message.Get
 import com.icemelon404.bucket.network.storage.message.Set
 import com.icemelon404.bucket.network.storage.message.Value
-import com.icemelon404.bucket.storage.KeyValueStorage
+import com.icemelon404.bucket.core.KeyValueStorage
 import io.netty.channel.ChannelHandlerContext
 
 class GetHandler (

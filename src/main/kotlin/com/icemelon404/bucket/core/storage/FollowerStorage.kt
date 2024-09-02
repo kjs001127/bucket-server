@@ -4,13 +4,11 @@ import com.icemelon404.bucket.core.aof.AppendOnlyFile
 import com.icemelon404.bucket.core.aof.withTry
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.replication.OffsetAwareWritable
-import com.icemelon404.bucket.storage.KeyValue
-import com.icemelon404.bucket.storage.KeyValueStorage
+import com.icemelon404.bucket.core.KeyValue
+import com.icemelon404.bucket.core.KeyValueStorage
 import java.nio.ByteBuffer
-import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.read
-import kotlin.concurrent.withLock
 import kotlin.concurrent.write
 
 class FollowerStorage(

@@ -3,12 +3,11 @@ package com.icemelon404.bucket.network.storage.codec
 import com.icemelon404.bucket.network.common.MessageCodec
 import com.icemelon404.bucket.network.common.Packet
 import com.icemelon404.bucket.network.storage.message.Set
-import com.icemelon404.bucket.storage.codec.KeyValueCodec
 import java.nio.ByteBuffer
 
 class SetCodec(
     packetId: Int,
-    val codec: KeyValueCodec
+    val codec: SimpleKeyValueCodec
 ) : MessageCodec<Set>(Set::class, packetId) {
 
     override fun resolve(packet: Packet): Set {

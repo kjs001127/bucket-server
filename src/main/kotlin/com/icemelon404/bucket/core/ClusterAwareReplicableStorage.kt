@@ -6,14 +6,12 @@ import com.icemelon404.bucket.cluster.ElectionEventListener
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.util.logger
 import com.icemelon404.bucket.replication.*
-import com.icemelon404.bucket.storage.KeyValue
-import com.icemelon404.bucket.storage.KeyValueStorage
+import com.icemelon404.bucket.core.KeyValue
+import com.icemelon404.bucket.core.KeyValueStorage
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
-import java.util.concurrent.locks.ReadWriteLock
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
-import kotlin.concurrent.read
 import kotlin.concurrent.withLock
 import kotlin.concurrent.write
 
@@ -24,18 +22,19 @@ class ClusterAwareReplicableStorage(
 ) : ElectionEventListener, ReplicationStrategy, KeyValueStorage {
 
     private val storageLock = ReentrantReadWriteLock()
-    private val serializer: Executor = Executors.newSingleThreadExecutor()
+    private val statusLock = ReentrantLock()
     private lateinit var status: ReplicationStatus
 
-    override fun onVotePending() = serializer.execute {
+    override fun onVotePending() = statusLock.withLock {
         logger().info { "replication state: idle" }
+
         storageLock.write {
             newReplicationStatus(EmptyStatus())
             storage.setIdle()
         }
     }
 
-    override fun onElectedAsLeader(term: Long) = serializer.execute {
+    override fun onElectedAsLeader(term: Long) = statusLock.withLock {
         logger().info { "replication state: leader" }
 
         storageLock.write {
@@ -44,7 +43,7 @@ class ClusterAwareReplicableStorage(
         }
     }
 
-    override fun onLeaderFound(term: Long, leaderAddress: InstanceAddress) = serializer.execute {
+    override fun onLeaderFound(term: Long, leaderAddress: InstanceAddress) = statusLock.withLock {
         logger().info { "replication state: follower" }
 
         storageLock.write {
@@ -65,24 +64,24 @@ class ClusterAwareReplicableStorage(
     }
 
     override fun onData(replication: DataReplication) =
-        serializer.execute {
+        statusLock.withLock {
             status.onData(replication)
         }
 
 
     override fun onRequest(request: ReplicationContext, accept: ReplicationAcceptor) =
-        serializer.execute {
+        statusLock.withLock {
             status.onRequest(request, accept)
         }
 
     override fun onAck(ack: Ack, dataSender: ReplicationDataSender) =
-        serializer.execute {
+        statusLock.withLock {
             status.onAck(ack, dataSender)
         }
 
 
     override fun onAccept(accept: ReplicationAccept, ack: ReplicationAckSender) =
-        serializer.execute {
+        statusLock.withLock {
             status.onAccept(accept, ack)
         }
 

@@ -54,6 +54,7 @@ class ClusterNode(
 
     fun write(obj: Any) {
         if (!channel.isOpen) {
+            channel.eventLoop().schedule(::connect, 1000, TimeUnit.MILLISECONDS)
             throw RuntimeException()
         }
         channel.writeAndFlush(obj)

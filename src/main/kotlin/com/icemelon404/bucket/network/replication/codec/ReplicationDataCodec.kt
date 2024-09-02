@@ -3,7 +3,6 @@ package com.icemelon404.bucket.network.replication.codec
 import com.icemelon404.bucket.network.replication.ReplicationData
 import com.icemelon404.bucket.network.common.MessageCodec
 import com.icemelon404.bucket.network.common.Packet
-import com.icemelon404.bucket.storage.codec.KeyValueCodec
 import java.nio.ByteBuffer
 
 class ReplicationDataCodec(

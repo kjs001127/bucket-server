@@ -5,7 +5,7 @@ import com.icemelon404.bucket.network.replication.Redirect
 import com.icemelon404.bucket.network.common.MessageHandler
 import com.icemelon404.bucket.network.storage.message.*
 import com.icemelon404.bucket.network.storage.message.Set
-import com.icemelon404.bucket.storage.KeyValueStorage
+import com.icemelon404.bucket.core.KeyValueStorage
 import io.netty.channel.ChannelHandlerContext
 
 class RedirectGetHandler(

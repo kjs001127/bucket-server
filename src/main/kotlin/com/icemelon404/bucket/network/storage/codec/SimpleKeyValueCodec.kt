@@ -1,14 +1,14 @@
-package com.icemelon404.bucket.storage.codec
+package com.icemelon404.bucket.network.storage.codec
 
 import com.icemelon404.bucket.common.sizeOfString
 import com.icemelon404.bucket.common.putString
 import com.icemelon404.bucket.common.string
-import com.icemelon404.bucket.storage.KeyValue
+import com.icemelon404.bucket.core.KeyValue
 import java.nio.ByteBuffer
 
-class SimpleKeyValueCodec: KeyValueCodec {
+class SimpleKeyValueCodec  {
 
-    override fun serialize(keyValue: List<KeyValue>): ByteBuffer {
+    fun serialize(keyValue: List<KeyValue>): ByteBuffer {
         val bufferSize = keyValue.sumOf { bufferSize(it) }
         return ByteBuffer.allocate(bufferSize).apply {
             keyValue.forEach { write(it) }
@@ -27,7 +27,7 @@ class SimpleKeyValueCodec: KeyValueCodec {
     private fun bufferSize(keyValue: KeyValue) =
         sizeOfString(keyValue.key) + Integer.SIZE + (keyValue.value?.size?:0)
 
-    override fun deserialize(buffer: ByteBuffer): List<KeyValue> {
+    fun deserialize(buffer: ByteBuffer): List<KeyValue> {
         val ret = mutableListOf<KeyValue>()
         while (true) {
             buffer.mark()
