@@ -8,8 +8,6 @@ import com.icemelon404.bucket.util.logger
 import com.icemelon404.bucket.replication.*
 import com.icemelon404.bucket.core.KeyValue
 import com.icemelon404.bucket.core.KeyValueStorage
-import java.util.concurrent.Executor
-import java.util.concurrent.Executors
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.withLock

@@ -11,6 +11,7 @@ import com.icemelon404.bucket.cluster.core.ElectionStateHandler
 import com.icemelon404.bucket.cluster.core.Term
 import com.icemelon404.bucket.network.storage.codec.SimpleKeyValueCodec
 import com.icemelon404.bucket.common.InstanceAddress
+import com.icemelon404.bucket.core.KeyValueStorage
 import com.icemelon404.bucket.network.election.codec.DenyHeartBeatCodec
 import com.icemelon404.bucket.network.election.codec.HeartBeatCodec
 import com.icemelon404.bucket.network.election.codec.VoteCodec
@@ -118,7 +119,7 @@ fun main(arr: Array<String>) {
     val clusterNodes = mutableSetOf<ClusterNode>()
     val replicationNodes = mutableSetOf<ClusterNode>()
 
-    val nodes = config.clusterNodes.forEach{ str ->
+    config.clusterNodes.forEach{ str ->
         str.split(":").let {
             clusterNodes.add(ClusterNode(InstanceAddress(it[0], it[1].toInt()),codecs, handlers))
             replicationNodes.add(ClusterNode(InstanceAddress(it[0], it[1].toInt()+10000), replicationCodecs, replicationHandlers))
@@ -130,6 +131,18 @@ fun main(arr: Array<String>) {
 
     val server = ClusterServer(codecs, handlers, clusterIp.port)
 
+
+    clusterNodes.forEach { connector.addInstance(it); it.connect() }
+    replicationNodes.forEach { connector.addInstance(it); it.connect() }
+
+    electionHandler.start(clusterNodes.map { PeerRequester(it, clusterIp) }.toSet())
+    server.start()
+    clusterSvr(config, replication).start()
+    replicationServer.start()
+}
+
+
+fun clusterSvr(config: Config, storage: KeyValueStorage): ClusterServer {
     val storageCodec = listOf(
         AckCodec(1),
         GetCodec(2),
@@ -140,18 +153,9 @@ fun main(arr: Array<String>) {
     )
 
     val storageHandler = listOf(
-        RedirectSetHandler(replication),
-        RedirectGetHandler(replication),
+        RedirectSetHandler(storage),
+        RedirectGetHandler(storage),
     )
 
-    val storageServer = ClusterServer(storageCodec, storageHandler, storageIp.port)
-
-
-    clusterNodes.forEach { connector.addInstance(it); it.connect() }
-    replicationNodes.forEach { connector.addInstance(it); it.connect() }
-
-    electionHandler.start(clusterNodes.map { PeerRequester(it, clusterIp) }.toSet())
-    server.start()
-    storageServer.start()
-    replicationServer.start()
+    return ClusterServer(storageCodec, storageHandler, config.port)
 }

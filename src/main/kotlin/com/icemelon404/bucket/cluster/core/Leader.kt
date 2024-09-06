@@ -13,14 +13,14 @@ class Leader(
     private val transition: ElectionStateHandler,
     private val executor: ScheduledExecutorService,
     private val electionEventListener: ElectionEventListener,
-    private val logIndex: ClusterLog
+    private val clusterLog: ClusterLog
 ) : ElectionState {
 
     private val health = ConcurrentHashMap<InstanceAddress, Health>()
 
     @Volatile
     private lateinit var heartBeatJob: List<Future<*>>
-    private var closed: Boolean = false
+    private var once: Boolean = false
 
     @Volatile
     private lateinit var watchJob: Future<*>
@@ -92,7 +92,7 @@ class Leader(
     override fun onRequestVote(voteRequest: VoteRequest) {
         if (voteRequest.term > term.value) {
             term.value = voteRequest.term
-            if (logIndex > voteRequest.log)
+            if (clusterLog > voteRequest.log)
                 return
             if (toFollower(voteRequest.term))
                 voteRequest.vote()
@@ -105,9 +105,10 @@ class Leader(
     }
 
     private fun toFollower(responseTerm: Long): Boolean = lock.withTry {
-        if (closed) {
+        if (once) {
             return false
         }
+        once = true
         term.value = responseTerm
         cancelBackgroundJobs()
         transition.toFollower()

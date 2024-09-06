@@ -5,8 +5,11 @@ import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.cluster.LeaderHeartBeat
 import com.icemelon404.bucket.cluster.ClusterLog
 import com.icemelon404.bucket.cluster.VoteRequest
+import com.icemelon404.bucket.common.withTry
 import com.icemelon404.bucket.util.logger
 import java.util.concurrent.*
+import java.util.concurrent.locks.ReentrantLock
+import kotlin.concurrent.withLock
 
 class Follower(
     private val term: Term,
@@ -20,7 +23,7 @@ class Follower(
     private var electionTimeout = System.currentTimeMillis()
     private lateinit var checkTimeoutJob: Future<*>
     private var leaderAddress: InstanceAddress? = null
-
+    private val lock = ReentrantLock()
 
     override fun onStart() {
         logger().info { "Transition to follower state" }
@@ -29,7 +32,7 @@ class Follower(
         checkElectionTimeout()
     }
 
-    override fun onHeartBeat(claim: LeaderHeartBeat) {
+    override fun onHeartBeat(claim: LeaderHeartBeat) = lock.withTry {
         if (term.value > claim.term) {
             logger().warn { "Leader with lower term: ${claim.term} detected. Denied leader" }
             claim.deny(term.value)
@@ -48,15 +51,14 @@ class Follower(
         }
     }
 
-    override fun onRequestVote(request: VoteRequest) {
-        if (request.term > term.value) {
-            term.value = request.term
-            if (logIndex > request.log)
+    override fun onRequestVote(voteRequest: VoteRequest) {
+        if (voteRequest.term > term.value) {
+            term.value = voteRequest.term
+            if (logIndex > voteRequest.log)
                 return
             logger().info { "Voted incoming request" }
             refreshElectionTimeout()
-            electionEventListener.onVotePending()
-            request.vote()
+            voteRequest.vote()
         }
     }
 
@@ -68,11 +70,17 @@ class Follower(
         val latch = CountDownLatch(1)
         checkTimeoutJob = executor.scheduleWithFixedDelay({
             latch.await()
-            if (electionTimeout < System.currentTimeMillis()) {
-                logger().warn { "Election timeout" }
-                transition.toCandidate()
-                checkTimeoutJob.cancel(true)
-                return@scheduleWithFixedDelay
+            lock.withTry {
+                if (checkTimeoutJob.isCancelled) {
+                    checkTimeoutJob.cancel(true)
+                    return@scheduleWithFixedDelay
+                }
+                if (electionTimeout < System.currentTimeMillis()) {
+                    logger().warn { "Election timeout" }
+                    transition.toCandidate()
+                    checkTimeoutJob.cancel(true)
+                    return@scheduleWithFixedDelay
+                }
             }
         }, 200, 200, TimeUnit.MILLISECONDS)
         latch.countDown()
