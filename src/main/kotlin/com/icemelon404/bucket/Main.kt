@@ -31,7 +31,7 @@ import com.icemelon404.bucket.replication.core.Master
 import com.icemelon404.bucket.replication.core.Slave
 import com.icemelon404.bucket.replication.core.Recorder
 import com.icemelon404.bucket.core.storage.MemoryStorage
-import com.icemelon404.bucket.synchornize.ClusterAwareReplicableStorage
+import com.icemelon404.bucket.core.ClusterAwareReplicableStorage
 import java.io.File
 import java.nio.channels.FileChannel
 import java.nio.file.Path
