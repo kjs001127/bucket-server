@@ -28,6 +28,8 @@ class Recorder(
         }
         get() {
             return try {
+                current.position(0)
+
                 val buf = ByteBuffer.allocate(current.size().toInt())
                 current.read(buf)
                 buf.flip()

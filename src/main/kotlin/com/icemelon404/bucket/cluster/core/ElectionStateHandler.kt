@@ -9,13 +9,12 @@ class ElectionStateHandler (
     private val electionEventListener: ElectionEventListener,
     private val executor: ScheduledExecutorService,
     private val term: Term,
-    private val logIndex: ClusterLog,
-) : ElectionService {
+    private val logIndex: Log,
+) : PeerEventListener {
 
     private lateinit var peers: Set<Peer>
     private lateinit var status: ElectionState
     private val lock = ReentrantLock()
-
 
     fun start(peers: Set<Peer>) {
         this.peers = peers

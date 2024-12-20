@@ -1,6 +1,6 @@
 package com.icemelon404.bucket.network.election.requester
 
-import com.icemelon404.bucket.cluster.ClusterLog
+import com.icemelon404.bucket.cluster.Log
 import com.icemelon404.bucket.cluster.Peer
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.network.connection.ClusterNode
@@ -18,7 +18,7 @@ class PeerRequester(
         node.write(HeartBeat(term, serverAddress))
     }
 
-    override fun requestVote(term: Long, index: ClusterLog) {
+    override fun requestVote(term: Long, index: Log) {
         val temAndOffset = index.termAndOffset
         node.write(VoteRequest(term, temAndOffset.term, temAndOffset.offset))
     }

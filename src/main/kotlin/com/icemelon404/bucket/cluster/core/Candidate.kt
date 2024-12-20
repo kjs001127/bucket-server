@@ -8,7 +8,7 @@ import kotlin.concurrent.withLock
 
 class Candidate(
     private val term: Term,
-    private val logIndex: ClusterLog,
+    private val logIndex: Log,
     private val peers: Set<Peer>,
     private val transition: ElectionStateHandler,
     private val electionEventListener: ElectionEventListener,

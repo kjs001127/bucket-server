@@ -1,6 +1,5 @@
 package com.icemelon404.bucket.core.storage
 
-import com.icemelon404.bucket.core.aof.AofIterator
 import com.icemelon404.bucket.core.aof.AppendOnlyFile
 import com.icemelon404.bucket.core.aof.TermKeyValue
 import com.icemelon404.bucket.replication.OffsetReadable
@@ -25,13 +24,13 @@ class LeaderStorage(
     private val replicators = mutableSetOf<ReplicatorImpl>()
 
     override val offset: Long
-        get() = lock.withLock { aof.offset }
+        get() =  aof.offset
 
     fun startWith(term: Long) {
         this.term = term
     }
 
-    override fun close() = lock.withLock {
+    override fun close() {
         replicators.toMutableList().forEach {
             it.closeFile()
         }
@@ -48,7 +47,7 @@ class LeaderStorage(
         return storage.read(key)
     }
 
-    override fun clear(): Unit = lock.withLock {
+    override fun clear() = lock.withLock {
         storage.clear()
         aof.truncate(0)
     }
@@ -64,7 +63,7 @@ class LeaderStorage(
     ) : Replicator {
 
         private val queue = LinkedBlockingQueue<ByteBuffer>()
-        private val aof: AofIterator = this@LeaderStorage.aof.iterator(startOffset, endOffset)
+        private val aof: AppendOnlyFile.AofIterator = this@LeaderStorage.aof.iterator(startOffset, endOffset)
 
 
         override fun read(buf: ByteBuffer, timeoutMs: Long) {

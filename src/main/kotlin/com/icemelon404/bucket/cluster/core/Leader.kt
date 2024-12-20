@@ -13,7 +13,7 @@ class Leader(
     private val transition: ElectionStateHandler,
     private val executor: ScheduledExecutorService,
     private val electionEventListener: ElectionEventListener,
-    private val clusterLog: ClusterLog
+    private val log: Log
 ) : ElectionState {
 
     private val health = ConcurrentHashMap<InstanceAddress, Health>()
@@ -92,7 +92,7 @@ class Leader(
     override fun onRequestVote(voteRequest: VoteRequest) {
         if (voteRequest.term > term.value) {
             term.value = voteRequest.term
-            if (clusterLog > voteRequest.log)
+            if (log > voteRequest.log)
                 return
             if (toFollower(voteRequest.term))
                 voteRequest.vote()

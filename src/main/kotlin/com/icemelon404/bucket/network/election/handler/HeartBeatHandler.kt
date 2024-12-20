@@ -1,6 +1,6 @@
 package com.icemelon404.bucket.network.election.handler
 
-import com.icemelon404.bucket.cluster.ElectionService
+import com.icemelon404.bucket.cluster.PeerEventListener
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.cluster.LeaderHeartBeat
 import com.icemelon404.bucket.network.election.HeartBeat
@@ -9,7 +9,7 @@ import com.icemelon404.bucket.network.common.MessageHandler
 import io.netty.channel.ChannelHandlerContext
 
 class HeartBeatHandler(
-    val listener: ElectionService
+    val listener: PeerEventListener
 ) : MessageHandler<HeartBeat>(HeartBeat::class) {
 
     override fun onMessage(ctx: ChannelHandlerContext?, msg: HeartBeat) {

@@ -71,7 +71,7 @@ fun main(arr: Array<String>) {
     val connector = ClusterNodeMatchingConnector(mutableSetOf())
     val versionManager = Recorder(
         FileChannel.open(
-            Path.of("current.data"),
+            Path.of(config.dataPath +  File.separator + "version.data"),
             StandardOpenOption.READ,
             StandardOpenOption.WRITE,
             StandardOpenOption.CREATE

@@ -1,7 +1,7 @@
 package com.icemelon404.bucket.cluster.core
 
-import com.icemelon404.bucket.cluster.ElectionService
+import com.icemelon404.bucket.cluster.PeerEventListener
 
-interface ElectionState : ElectionService {
+interface ElectionState : PeerEventListener {
     fun onStart() {}
 }

@@ -1,20 +1,17 @@
 package com.icemelon404.bucket.core.aof
 
-import com.icemelon404.bucket.cluster.ClusterLog
+import com.icemelon404.bucket.cluster.Log
 import com.icemelon404.bucket.cluster.TermAndOffset
-import io.netty.buffer.UnpooledDirectByteBuf
 import java.lang.Integer.min
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel
 import java.nio.file.Paths
 import java.nio.file.StandardOpenOption
-import java.util.concurrent.locks.ReentrantLock
-import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock
 import java.util.function.Consumer
 
 class AppendOnlyFile(
     private val filePath: String,
-) : ClusterLog {
+) : Log {
 
     private lateinit var file0: FileChannel
     private val codec = TermKeyValueCodec()
@@ -39,7 +36,6 @@ class AppendOnlyFile(
         file.force(true)
     }
 
-
     fun loadAndFix(consumer: Consumer<TermKeyValue>) {
 
         val it = iterator(0, file.size())
@@ -58,27 +54,34 @@ class AppendOnlyFile(
     }
 
     fun iterator(start: Long, end: Long): AofIterator {
-        return AofIterator(openFile(StandardOpenOption.READ), start, end)
+        return AofIterator(start, end)
     }
 
     private fun openFile(vararg extra: StandardOpenOption) =
         FileChannel.open(Paths.get(filePath), *extra)
 
     fun write(buf: ByteBuffer): List<TermKeyValue> {
+
+        buf.mark()
+
         val keyValues = codec.deserialize(buf)
         if (keyValues.isEmpty()) {
             return emptyList()
         }
 
-        term = keyValues.maxOf { it.term }
-        val limit = buf.limit()
+        val old = buf.limit()
 
-        buf.flip()
+        buf.limit(buf.position())
+        buf.reset()
+
         while (buf.hasRemaining()) {
             file.write(buf)
         }
 
-        buf.limit(limit)
+        term = keyValues.maxOf { it.term }
+
+        buf.limit(old)
+
         return keyValues
     }
 
@@ -94,35 +97,35 @@ class AppendOnlyFile(
         buf.flip()
         return buf
     }
-}
 
-class AofIterator(
-    val channel: FileChannel,
-    private val end: Long,
-    start: Long,
-) {
+    inner class AofIterator(
+        private val end: Long,
+        start: Long,
+    ) {
 
-    init {
-        channel.position(start)
-    }
+        val channel: FileChannel = openFile(StandardOpenOption.READ)
 
-    fun read(buffer: ByteBuffer) {
-        val remaining = (end - channel.position()).toInt()
-        if (remaining <= 0) {
-            return
+        init {
+            channel.position(start)
         }
 
-        buffer.limit(min(buffer.limit(), buffer.position() + remaining))
-        channel.read(buffer)
-    }
+        fun read(buffer: ByteBuffer) {
+            val remaining = (end - channel.position()).toInt()
+            if (remaining <= 0) {
+                return
+            }
 
-    fun hasNext(): Boolean {
-        return channel.position() < end
-    }
+            buffer.limit(min(buffer.limit(), buffer.position() + remaining))
+            channel.read(buffer)
+        }
+
+        fun hasNext(): Boolean {
+            return channel.position() < end
+        }
 
 
-    fun close() {
-        channel.close()
+        fun close() {
+            channel.close()
+        }
     }
 }
-

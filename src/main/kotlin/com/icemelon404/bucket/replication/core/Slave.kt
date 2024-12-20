@@ -20,12 +20,12 @@ class Slave(
     private var replicationSeqNo: Long = 0
 
     @Volatile
-    private var timeout = System.currentTimeMillis()
+    private var replicationExpiresAt = System.currentTimeMillis()
 
     override fun start() {
         logger().info { "Slave state" }
         scheduler = executorService.scheduleWithFixedDelay({
-            if (timeout < System.currentTimeMillis()) {
+            if (replicationExpiresAt < System.currentTimeMillis()) {
                 try {
                     requestReplication()
                 } catch (e: Exception) {
@@ -58,8 +58,8 @@ class Slave(
     private fun currentIdAndOffset(): VersionAndOffset =
         VersionAndOffset(this.recorder.currentVersion, aof.offset)
 
-    private fun refreshRequestTimeout() {
-        timeout = System.currentTimeMillis() + 10000
+    private fun refreshReplicationExpiresAt() {
+        replicationExpiresAt = System.currentTimeMillis() + 10000
     }
 
     override fun onData(replication: DataReplication) = lock.withLock {
@@ -70,7 +70,7 @@ class Slave(
     }
 
     private fun writeData(content: ByteArray) {
-        refreshRequestTimeout()
+        refreshReplicationExpiresAt()
         if (content.isNotEmpty())
             aof.write(content)
     }
@@ -83,7 +83,7 @@ class Slave(
         if (accept.replicationId != replicationId)
             return
 
-        refreshRequestTimeout()
+        refreshReplicationExpiresAt()
         aof.truncate(accept.dataInfo.offset)
         recorder.rollWith(accept.dataInfo.id, accept.dataInfo.offset)
 

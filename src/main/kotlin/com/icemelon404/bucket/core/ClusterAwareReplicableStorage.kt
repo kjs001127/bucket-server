@@ -5,6 +5,7 @@ import com.icemelon404.bucket.cluster.ElectionEventListener
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.util.logger
 import com.icemelon404.bucket.replication.*
+import java.util.concurrent.Executors
 import java.util.concurrent.locks.ReentrantLock
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import kotlin.concurrent.withLock
@@ -16,34 +17,36 @@ class ClusterAwareReplicableStorage(
     private val newLeader: (masterId: Long) -> ReplicationStatus,
 ) : ElectionEventListener, ReplicationStrategy, KeyValueStorage {
 
-    private val storageLock = ReentrantReadWriteLock()
     private val statusLock = ReentrantLock()
+
     private lateinit var status: ReplicationStatus
 
-    override fun onVotePending() = statusLock.withLock {
+    override fun onVotePending() {
         logger().info { "replication state: idle" }
 
-        storageLock.write {
-            newReplicationStatus(EmptyStatus())
-            storage.setIdle()
+        statusLock.withLock {
+                newReplicationStatus(EmptyStatus())
+                storage.setIdle()
         }
     }
 
-    override fun onElectedAsLeader(term: Long) = statusLock.withLock {
+    override fun onElectedAsLeader(term: Long) {
         logger().info { "replication state: leader" }
 
-        storageLock.write {
-            newReplicationStatus(newLeader(term))
-            storage.toLeader(term)
+        statusLock.withLock {
+                newReplicationStatus(newLeader(term))
+                storage.toLeader(term)
         }
     }
 
-    override fun onLeaderFound(term: Long, leaderAddress: InstanceAddress) = statusLock.withLock {
+    override fun onLeaderFound(term: Long, leaderAddress: InstanceAddress) {
         logger().info { "replication state: follower" }
 
-        storageLock.write {
-            newReplicationStatus(newFollower(leaderAddress))
-            storage.toFollower(leaderAddress)
+        statusLock.withLock {
+
+                newReplicationStatus(newFollower(leaderAddress))
+                storage.toFollower(leaderAddress)
+
         }
     }
 
@@ -58,39 +61,31 @@ class ClusterAwareReplicableStorage(
             this.status.close()
     }
 
-    override fun onData(replication: DataReplication) =
-        statusLock.withLock {
-            status.onData(replication)
-        }
+    override fun onData(replication: DataReplication) = statusLock.withTry {
+        status.onData(replication)
+    }
 
+    override fun onRequest(request: ReplicationContext, accept: ReplicationAcceptor) = statusLock.withTry {
+        status.onRequest(request, accept)
+    }
 
-    override fun onRequest(request: ReplicationContext, accept: ReplicationAcceptor) =
-        statusLock.withLock {
-            status.onRequest(request, accept)
-        }
+    override fun onAck(ack: Ack, dataSender: ReplicationDataSender) = statusLock.withTry {
+        status.onAck(ack, dataSender)
+    }
 
-    override fun onAck(ack: Ack, dataSender: ReplicationDataSender) =
-        statusLock.withLock {
-            status.onAck(ack, dataSender)
-        }
-
-
-    override fun onAccept(accept: ReplicationAccept, ack: ReplicationAckSender) =
-        statusLock.withLock {
+    override fun onAccept(accept: ReplicationAccept, ack: ReplicationAckSender) = statusLock.withTry {
             status.onAccept(accept, ack)
-        }
+    }
 
-    override fun write(keyValue: KeyValue) =
-        storageLock.readLock().withTry {
-            storage.write(keyValue)
-        }
+    override fun write(keyValue: KeyValue) = statusLock.withTry {
+        storage.write(keyValue)
+    }
 
-    override fun read(key: String) =
-        storageLock.readLock().withTry {
-            storage.read(key)
-        }
+    override fun read(key: String) = statusLock.withTry {
+        storage.read(key)
+    }
 
-    override fun clear() = storageLock.readLock().withTry {
+    override fun clear() = statusLock.withTry {
         storage.clear()
     }
 }

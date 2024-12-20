@@ -3,27 +3,25 @@ package com.icemelon404.bucket.cluster.core
 import com.icemelon404.bucket.cluster.ElectionEventListener
 import com.icemelon404.bucket.common.InstanceAddress
 import com.icemelon404.bucket.cluster.LeaderHeartBeat
-import com.icemelon404.bucket.cluster.ClusterLog
+import com.icemelon404.bucket.cluster.Log
 import com.icemelon404.bucket.cluster.VoteRequest
 import com.icemelon404.bucket.common.withTry
 import com.icemelon404.bucket.util.logger
 import java.util.concurrent.*
 import java.util.concurrent.locks.ReentrantLock
-import kotlin.concurrent.withLock
 
 class Follower(
     private val term: Term,
     private val electionEventListener: ElectionEventListener,
     private val transition: ElectionStateHandler,
     private val executor: ScheduledExecutorService,
-    private val logIndex: ClusterLog
+    private val logIndex: Log
 ) : ElectionState {
 
     @Volatile
     private var electionTimeout = System.currentTimeMillis()
     private lateinit var checkTimeoutJob: Future<*>
     private var leaderAddress: InstanceAddress? = null
-    private val lock = ReentrantLock()
 
     override fun onStart() {
         logger().info { "Transition to follower state" }
@@ -32,7 +30,7 @@ class Follower(
         checkElectionTimeout()
     }
 
-    override fun onHeartBeat(claim: LeaderHeartBeat) = lock.withTry {
+    override fun onHeartBeat(claim: LeaderHeartBeat) {
         if (term.value > claim.term) {
             logger().warn { "Leader with lower term: ${claim.term} detected. Denied leader" }
             claim.deny(term.value)
@@ -70,7 +68,7 @@ class Follower(
         val latch = CountDownLatch(1)
         checkTimeoutJob = executor.scheduleWithFixedDelay({
             latch.await()
-            lock.withTry {
+
                 if (checkTimeoutJob.isCancelled) {
                     checkTimeoutJob.cancel(true)
                     return@scheduleWithFixedDelay
@@ -80,7 +78,6 @@ class Follower(
                     transition.toCandidate()
                     checkTimeoutJob.cancel(true)
                     return@scheduleWithFixedDelay
-                }
             }
         }, 200, 200, TimeUnit.MILLISECONDS)
         latch.countDown()
