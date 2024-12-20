@@ -17,14 +17,14 @@ class ClusterAwareReplicableStorage(
     private val newLeader: (masterId: Long) -> ReplicationStatus,
 ) : ElectionEventListener, ReplicationStrategy, KeyValueStorage {
 
-    private val statusLock = ReentrantLock()
+    private val statusLock = ReentrantReadWriteLock()
 
     private lateinit var status: ReplicationStatus
 
     override fun onVotePending() {
         logger().info { "replication state: idle" }
 
-        statusLock.withLock {
+        statusLock.writeLock().withLock {
                 newReplicationStatus(EmptyStatus())
                 storage.setIdle()
         }
@@ -33,7 +33,7 @@ class ClusterAwareReplicableStorage(
     override fun onElectedAsLeader(term: Long) {
         logger().info { "replication state: leader" }
 
-        statusLock.withLock {
+        statusLock.writeLock().withLock {
                 newReplicationStatus(newLeader(term))
                 storage.toLeader(term)
         }
@@ -42,7 +42,7 @@ class ClusterAwareReplicableStorage(
     override fun onLeaderFound(term: Long, leaderAddress: InstanceAddress) {
         logger().info { "replication state: follower" }
 
-        statusLock.withLock {
+        statusLock.writeLock().withLock {
 
                 newReplicationStatus(newFollower(leaderAddress))
                 storage.toFollower(leaderAddress)
@@ -61,31 +61,31 @@ class ClusterAwareReplicableStorage(
             this.status.close()
     }
 
-    override fun onData(replication: DataReplication) = statusLock.withTry {
+    override fun onData(replication: DataReplication) = statusLock.readLock().withTry {
         status.onData(replication)
     }
 
-    override fun onRequest(request: ReplicationContext, accept: ReplicationAcceptor) = statusLock.withTry {
+    override fun onRequest(request: ReplicationContext, accept: ReplicationAcceptor) = statusLock.readLock().withTry {
         status.onRequest(request, accept)
     }
 
-    override fun onAck(ack: Ack, dataSender: ReplicationDataSender) = statusLock.withTry {
+    override fun onAck(ack: Ack, dataSender: ReplicationDataSender) = statusLock.readLock().withTry {
         status.onAck(ack, dataSender)
     }
 
-    override fun onAccept(accept: ReplicationAccept, ack: ReplicationAckSender) = statusLock.withTry {
+    override fun onAccept(accept: ReplicationAccept, ack: ReplicationAckSender) = statusLock.readLock().withTry {
             status.onAccept(accept, ack)
     }
 
-    override fun write(keyValue: KeyValue) = statusLock.withTry {
+    override fun write(keyValue: KeyValue) = statusLock.readLock().withTry {
         storage.write(keyValue)
     }
 
-    override fun read(key: String) = statusLock.withTry {
+    override fun read(key: String) = statusLock.readLock().withTry {
         storage.read(key)
     }
 
-    override fun clear() = statusLock.withTry {
+    override fun clear() = statusLock.readLock().withTry {
         storage.clear()
     }
 }
